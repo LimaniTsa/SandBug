@@ -56,7 +56,7 @@ SandBug is a web-based malware analysis platform that combines traditional stati
 ```bash
 git clone https://github.com/LimaniTsa/SandBug.git
 cd sandbug
-'''
+```
 
 ## Step 1 — Backend Setup
 

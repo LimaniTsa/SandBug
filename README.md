@@ -18,10 +18,10 @@ SandBug is a web-based malware analysis platform that combines traditional stati
 
 ### **Frontend**
 - **Framework:** React 18.2.0 (TypeScript)  
-- **Routing:** React Router DOM 6.x  
+- **Routing:** React Router DOM 
 - **HTTP Client:** Axios  
 - **Icons:** Lucide React 0.263.1  
-- **Styling:** Custom CSS (CSS variables + glassmorphism)  
+- **Styling:** CSS 
 - **Font:** Inter (Google Fonts)  
 
 ### **Development Tools**

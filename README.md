@@ -1,4 +1,4 @@
-# 🐞 SandBug
+# SandBug
 ### AI-Assisted Malware Analysis Sandbox (Final Year Project)
 
 SandBug is a web-based malware analysis platform that combines traditional static and dynamic analysis techniques with AI-powered report generation. The system is designed to make malware analysis accessible to both technical security analysts and non-technical stakeholders by providing clear insights into potentially malicious files.

@@ -7,6 +7,7 @@ import os
 import hashlib
 import magic
 from datetime import datetime
+from app.services.static_analyzer import analyse_file
 
 def allowed_file(filename):
     #Check if file extension is allowed
@@ -100,14 +101,26 @@ def upload_file():
             file_hash=file_hash,
             file_size=file_size,
             file_type=file_type,
-            status='pending'
+            status='processing'
         )
-        
+
         db.session.add(new_analysis)
         db.session.commit()
         
         # note: need to add queue analysis task (sprint 8)
-        
+        try:
+            static_result = analyse_file(file_path)
+            new_analysis.static_analysis = static_result
+            new_analysis.status = "completed"
+            new_analysis.risk_score = static_result.get("risk_score", 0)
+            new_analysis.calculate_risk_level()
+        except Exception as e:
+            new_analysis.static_analysis = {"error": f"Static analysis failed: {str(e)}"}
+            new_analysis.status = "failed"
+
+
+        db.session.commit()
+
         return jsonify({
             'message': 'File uploaded successfully',
             'analysis': new_analysis.to_dict()
@@ -138,7 +151,7 @@ def get_analysis(analysis_id):
         if analysis.user_id and analysis.user_id != user_id:
             return jsonify({'error': 'Access denied'}), 403
         
-        return jsonify({'analysis': analysis.to_dict()}), 200
+        return jsonify({'analysis': analysis.to_dict(include_results=True)}), 200
         
     except Exception as e:
         return jsonify({'error': f'Failed to get analysis: {str(e)}'}), 500

@@ -120,6 +120,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isAuthenticated, userEmail }) => 
 
       //redirect to results page after 2 seconds
       setTimeout(() => {
+        console.log("Upload response:", response.data);
         navigate(`/results/${response.data.analysis.id}`);
       }, 2000);
 

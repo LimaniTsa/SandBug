@@ -3,7 +3,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 6rem 2rem 4rem;
+  padding-top: 7rem; 
   background: linear-gradient(135deg, var(--background) 0%, var(--surface-light) 100%);
 }
 
@@ -109,7 +110,7 @@ transition: color 0.2s ease;
 color: var(--success);
 }
 .btn-auth {
-background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+background: #78009c;
 color: white;
 padding: 1rem;
 border-radius: 0.5rem;
@@ -137,7 +138,7 @@ color: var(--text-secondary);
 margin-bottom: 0.5rem;
 }
 .auth-link {
-color: var(--primary);
+color: #78009c;
 font-weight: 600;
 transition: color 0.2s ease;
 }

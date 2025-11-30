@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileSearch, Activity, Brain, Shield, History, Download } from 'lucide-react';
+
 import FeatureCard from '../components/common/FeatureCard';
 import { getFeatures } from '../services/api';
 import { Feature } from '../types';
+
 import './Landing.css';
+import Iridescence from '../components/common/Iridescence';
 
 const iconMap: { [key: string]: any } = {
   FileSearch,
@@ -22,6 +25,7 @@ interface LandingProps {
 
 const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail }) => {
   const navigate = useNavigate();
+
   const [features, setFeatures] = useState<Feature[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,17 +53,26 @@ const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail }) => {
 
   return (
     <div className="landing">
-      {/* hero section */}
       <section className="hero">
+        <Iridescence
+          className="hero-liquid-bg"
+          color={[0.7, 0.3, 1.0]}
+          speed={0.6}
+          amplitude={0.22}
+          mouseReact={true}
+        />
+
         <div className="hero-content">
           {isAuthenticated ? (
             <>
               <h1 className="hero-title">
                 Hello, <span className="gradient-text">{getUserName()}</span>
               </h1>
+
               <p className="hero-subtitle">
-                Ready to analyse suspicious files? Access your dashboard to get started or view your previous analyses.
+                Ready to analyse suspicious files? Access your dashboard or review your previous analyses.
               </p>
+
               <div className="hero-actions">
                 <button onClick={() => navigate('/dashboard')} className="btn-primary">
                   Go to Dashboard
@@ -72,12 +85,13 @@ const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail }) => {
           ) : (
             <>
               <h1 className="hero-title">
-                SandBug: Malware Analysis
-                <span className="gradient-text"> Made Simple</span>
+                SandBug: Malware Analysis <span className="gradient-text">Made Simple</span>
               </h1>
+
               <p className="hero-subtitle">
-                SandBug lets you safely analyse suspicious files with just one click. It runs the file in a secure environment and automatically produces an easy-to-read report explaining everything it does — from system changes to potential risks. No setup, no installations, no cybersecurity knowledge required.
+                SandBug lets you safely analyse suspicious files with just one click in a secure, isolated environment.
               </p>
+
               <div className="hero-actions">
                 <button onClick={() => navigate('/dashboard')} className="btn-primary">
                   Continue as Guest
@@ -91,14 +105,9 @@ const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail }) => {
         </div>
       </section>
 
-      {/* features section */}
       <section className="features">
         <div className="features-container">
           <h2 className="section-title">SandBug Features</h2>
-          <p className="section-subtitle">
-            Advanced malware analysis capabilities designed for everyone
-          </p>
-          
           {loading ? (
             <div className="loading">
               <div className="loading-spinner"></div>
@@ -126,42 +135,31 @@ const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail }) => {
         </div>
       </section>
 
-      {/* how it works section */}
       <section className="how-it-works">
         <div className="how-it-works-container">
           <h2 className="section-title">How It Works</h2>
+
           <div className="steps">
             <div className="step">
               <div className="step-number">1</div>
               <h3>Upload File</h3>
-              <p>Drop your suspicious file or select it from your computer</p>
+              <p>Drop your suspicious file or select it from your computer.</p>
             </div>
+
             <div className="step">
               <div className="step-number">2</div>
               <h3>Automated Analysis</h3>
-              <p>The system performs comprehensive static and dynamic analysis</p>
+              <p>The system performs both static and dynamic analysis.</p>
             </div>
+
             <div className="step">
               <div className="step-number">3</div>
               <h3>Get Results</h3>
-              <p>Receive clear, AI-powered reports with actionable insights</p>
+              <p>Receive AI-powered reports with actionable insights.</p>
             </div>
           </div>
         </div>
       </section>
-
-      {/* cta section */}
-      {!isAuthenticated && (
-        <section className="cta">
-          <div className="cta-container">
-            <h2>Ready to Analyse Your First File?</h2>
-            <p>Get started in seconds - no account required for guest access</p>
-            <button onClick={() => navigate('/dashboard')} className="btn-cta">
-              Start Analysis Now
-            </button>
-          </div>
-        </section>
-      )}
     </div>
   );
 };

@@ -5,7 +5,7 @@ SandBug is a web-based malware analysis platform that combines traditional stati
 
 ---
 
-## 🚀 Technology Stack
+## Technology Stack
 
 ### **Backend**
 - **Framework:** Flask 3.0.0  
@@ -18,7 +18,7 @@ SandBug is a web-based malware analysis platform that combines traditional stati
 
 ### **Frontend**
 - **Framework:** React 18.2.0 (TypeScript)  
-- **Routing:** React Router DOM 
+- **Routing:** React Router DOM  
 - **HTTP Client:** Axios  
 - **Icons:** Lucide React 0.263.1  
 - **Styling:** CSS 
@@ -38,7 +38,7 @@ SandBug is a web-based malware analysis platform that combines traditional stati
 
 ---
 
-## 📦 Prerequisites
+## Prerequisites
 
 | Software      | Minimum Version | Download Link |
 |---------------|------------------|----------------|
@@ -49,14 +49,14 @@ SandBug is a web-based malware analysis platform that combines traditional stati
 
 ---
 
-# 🛠 Installation Guide
+# Installation Guide
 
 ## Step 1 — Clone Repository
 
 ```bash
 git clone https://github.com/LimaniTsa/SandBug.git
 cd sandbug
-```
+'''
 
 ## Step 1 — Backend Setup
 

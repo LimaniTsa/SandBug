@@ -1,4 +1,4 @@
-# 🐞 SandBug
+# SandBug
 ### AI-Assisted Malware Analysis Sandbox (Final Year Project)
 
 SandBug is a web-based malware analysis platform that combines traditional static and dynamic analysis techniques with AI-powered report generation. The system is designed to make malware analysis accessible to both technical security analysts and non-technical stakeholders by providing clear insights into potentially malicious files.
@@ -18,10 +18,10 @@ SandBug is a web-based malware analysis platform that combines traditional stati
 
 ### **Frontend**
 - **Framework:** React 18.2.0 (TypeScript)  
-- **Routing:** React Router DOM 6.x  
+- **Routing:** React Router DOM 
 - **HTTP Client:** Axios  
 - **Icons:** Lucide React 0.263.1  
-- **Styling:** Custom CSS (CSS variables + glassmorphism)  
+- **Styling:** CSS 
 - **Font:** Inter (Google Fonts)  
 
 ### **Development Tools**
@@ -56,7 +56,7 @@ SandBug is a web-based malware analysis platform that combines traditional stati
 ```bash
 git clone https://github.com/LimaniTsa/SandBug.git
 cd sandbug
-'''
+```
 
 ## Step 1 — Backend Setup
 

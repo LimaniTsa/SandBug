@@ -1,9 +1,3 @@
-"""
-SandBug Static Analysis Module
-Performs comprehensive static analysis on executable files
-British English version
-"""
-
 import pefile
 import math
 import re
@@ -11,7 +5,7 @@ import hashlib
 from typing import Dict, List, Any, Optional
 import magic
 from pathlib import Path
-
+from app.services.yara.yara_engine import scan_file
 
 class StaticAnalyser:
     
@@ -29,6 +23,10 @@ class StaticAnalyser:
             'strings': {
                 'ascii': [],
                 'unicode': []
+            },
+            'yara': {
+                'matched': False,
+                'rules': []
             },
             'suspicious_indicators': [],
             'risk_score': 0
@@ -49,6 +47,8 @@ class StaticAnalyser:
             self._extract_strings()
             self._detect_suspicious_indicators()
             self._calculate_risk_score()
+            self._run_yara_scan()
+
             
             return self.results
             
@@ -283,6 +283,25 @@ class StaticAnalyser:
             
         except Exception as e:
             self.results['strings']['error'] = str(e)
+
+    def _run_yara_scan(self):
+        """Run YARA signature matching (static, non-executing)"""
+        try:
+            matches = scan_file(str(self.file_path))
+            
+            self.results['yara'] = {
+                'matched': len(matches) > 0,
+                'rules': matches
+            }
+            
+            for match in matches:
+                self.results['suspicious_indicators'].append(
+                    f"YARA match: {match.get('rule')} "
+                    f"({match.get('meta', {}).get('severity', 'low')})"
+                )
+                
+        except Exception as e:
+            self.results['yara']['error'] = str(e)
     
     def _detect_suspicious_indicators(self):
         #detect suspicious indicators in the file
@@ -337,6 +356,16 @@ class StaticAnalyser:
             score += 20
         elif overall_entropy > 6.0:
             score += 10
+
+        for match in self.results.get('yara', {}).get('rules', []):
+            severity = match.get('meta', {}).get('severity', 'low')
+
+            if severity == 'high':
+                score += 40
+            elif severity == 'medium':
+                score += 25
+            else:
+                score += 10
         
         # Suspicious indicators add risk
         indicator_count = len(self.results['suspicious_indicators'])

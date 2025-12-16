@@ -4,8 +4,9 @@ import re
 import hashlib
 from typing import Dict, List, Any, Optional
 import magic
-from pathlib import Path
 from app.services.yara.yara_engine import scan_file
+from pathlib import Path
+
 
 class StaticAnalyser:
     
@@ -46,16 +47,15 @@ class StaticAnalyser:
             self._calculate_entropy()
             self._extract_strings()
             self._detect_suspicious_indicators()
-            self._calculate_risk_score()
             self._run_yara_scan()
+            self._calculate_risk_score()
 
-            
             return self.results
-            
+
         except Exception as e:
-            self.results['error'] = str(e)
+            self.results["error"] = str(e)
             return self.results
-    
+        
     def _analyse_file_info(self):
         #Extract basic file information
         try:
@@ -285,9 +285,10 @@ class StaticAnalyser:
             self.results['strings']['error'] = str(e)
 
     def _run_yara_scan(self):
-        """Run YARA signature matching (static, non-executing)"""
+        """Run YARA signature matching"""
         try:
             matches = scan_file(str(self.file_path))
+            print("DEBUG YARA MATCHES:", matches)
             
             self.results['yara'] = {
                 'matched': len(matches) > 0,

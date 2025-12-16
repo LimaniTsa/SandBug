@@ -44,6 +44,20 @@ interface Import {
   functions: string[];
 }
 
+interface YaraRule {
+  rule: string;
+  tags: string[];
+  meta: {
+    severity?: string;
+    description?: string;
+  };
+}
+
+interface YaraResults {
+  matched: boolean;
+  rules: YaraRule[];
+}
+
 interface StaticAnalysisResults {
   file_info: FileInfo;
   pe_headers: any;
@@ -55,9 +69,11 @@ interface StaticAnalysisResults {
     ascii: string[];
     unicode: string[];
   };
+  yara: YaraResults;
   suspicious_indicators: string[];
   risk_score: number;
 }
+
 
 interface AnalysisResponse {
   analysis_id: number;
@@ -84,20 +100,17 @@ const StaticResults: React.FC<StaticResultsProps> = ({ analysisId }) => {
       setError(null);
 
       const token = localStorage.getItem('token');
-      
-      const config = token ? {
-        headers: { Authorization: `Bearer ${token}` }
-      } : {};
+
+      const config = token
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : {};
 
       console.log(`Fetching analysis results for ID: ${analysisId}`);
 
-      //get the analysis record
       const analysisResponse = await axios.get<{ analysis: any }>(
         `http://localhost:5000/api/analysis/${analysisId}`,
         config
       );
-
-      console.log('Analysis response:', analysisResponse.data);
 
       const analysis = analysisResponse.data.analysis;
 
@@ -107,34 +120,57 @@ const StaticResults: React.FC<StaticResultsProps> = ({ analysisId }) => {
         'File'
       );
 
-      //check if static analysis exists
       if (!analysis.static_analysis) {
         setError('Static analysis not yet performed or failed');
-        setLoading(false);
         return;
       }
 
       const raw = analysis.static_analysis;
 
-      const file_info = {
-        filename: analysis.filename ?? raw.filename ?? "Unknown",
-        size: analysis.file_size ?? raw.size ?? 0,
-      file_type: analysis.file_type ?? raw.file_type ?? "Unknown",
-      md5: raw.md5 ?? analysis.md5 ?? "N/A",
-      sha1: raw.sha1 ?? analysis.sha1 ?? "N/A",
-      sha256: raw.sha256 ?? analysis.sha256 ?? analysis.file_hash ?? "N/A"
-    };
+      const normalized: StaticAnalysisResults = {
+        ...raw,
 
-    const normalized = {
-      ...raw,
-      file_info,
+        file_info: {
+          filename: analysis.filename ?? raw.filename ?? "Unknown",
+          size: analysis.file_size ?? raw.size ?? 0,
+          file_type: analysis.file_type ?? raw.file_type ?? "Unknown",
+          md5: raw.md5 ?? analysis.md5 ?? "N/A",
+          sha1: raw.sha1 ?? analysis.sha1 ?? "N/A",
+          sha256: raw.sha256 ?? analysis.sha256 ?? analysis.file_hash ?? "N/A",
+        },
+
+        entropy: raw.entropy ?? {
+          overall: 0,
+          interpretation: "Unknown"
+        },
+
+        sections: Array.isArray(raw.sections) ? raw.sections : [],
+        imports: Array.isArray(raw.imports) ? raw.imports : [],
+        exports: Array.isArray(raw.exports) ? raw.exports : [],
+
+        suspicious_indicators: Array.isArray(raw.suspicious_indicators)
+          ? raw.suspicious_indicators
+          : [],
+
+        yara: {
+          matched: raw.yara?.matched ?? false,
+          rules: Array.isArray(raw.yara?.rules) ? raw.yara.rules : []
+        },
+
+        strings: {
+          ascii: Array.isArray(raw.strings?.ascii) ? raw.strings.ascii : [],
+          unicode: Array.isArray(raw.strings?.unicode) ? raw.strings.unicode : []
+        },
+
+        risk_score: raw.risk_score ?? 0
       };
 
       setResults(normalized);
       setError(null);
+
     } catch (err: any) {
       console.error('Error fetching results:', err);
-      
+
       if (err.response?.status === 404) {
         setError('Analysis not found');
       } else if (err.response?.status === 403) {
@@ -144,10 +180,13 @@ const StaticResults: React.FC<StaticResultsProps> = ({ analysisId }) => {
       } else {
         setError('Failed to load static analysis results');
       }
+
     } finally {
       setLoading(false);
     }
   };
+
+    
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => {
@@ -316,8 +355,66 @@ const StaticResults: React.FC<StaticResultsProps> = ({ analysisId }) => {
       </div>
         )}
       </section>
+      {results.yara && (
+        <section className="result-section">
+          <div className="section-header" onClick={() => toggleSection('yara')}>
+            <div className="section-title">
+              <Shield size={20} />
+              <h3>
+                YARA Signature Matches{" "}
+                {results.yara.matched
+                  ? `(${results.yara.rules.length})`
+                  : "(None)"}
+              </h3>
+            </div>
+            {expandedSections.has('yara') ? (
+              <ChevronUp size={20} />
+            ) : (
+              <ChevronDown size={20} />
+            )}
+          </div>
 
-      {results.suspicious_indicators.length > 0 && (
+          {expandedSections.has('yara') && (
+            <div className="section-content">
+              {!results.yara.matched && (
+                <p className="clean-indicator">
+                  No known malicious signatures were detected.
+                </p>
+              )}
+
+              {results.yara.matched && (
+                <ul className="indicators-list">
+                  {results.yara.rules.map((rule, index) => (
+                    <li key={index} className="indicator-item">
+                      <Shield size={16} className="indicator-icon" />
+
+                      <div>
+                        <strong>{rule.rule}</strong>
+
+                        {rule.meta?.severity && (
+                          <span
+                            className={`severity-badge severity-${rule.meta.severity}`}
+                          >
+                            {rule.meta.severity.toUpperCase()}
+                          </span>
+                        )}
+
+                        {rule.meta?.description && (
+                          <p className="indicator-description">
+                            {rule.meta.description}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {results.suspicious_indicators?.length > 0 && (
         <section className="result-section">
           <div className="section-header" onClick={() => toggleSection('indicators')}>
             <div className="section-title">

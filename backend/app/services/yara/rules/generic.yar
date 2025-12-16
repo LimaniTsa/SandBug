@@ -1,14 +1,13 @@
-rule Suspicious_Command_Execution
+rule Suspicious_PowerShell_Download
 {
     meta:
-        description = "Suspicious command execution patterns"
+        description = "Detects PowerShell-based file download commands"
         severity = "medium"
 
     strings:
-        $a = "powershell" nocase
-        $b = "cmd.exe" nocase
-        $c = "wget " nocase
-        $d = "curl " nocase
+        $ps = "powershell" nocase
+        $dl = "Invoke-WebRequest" nocase
+        $http = "http://" nocase
 
     condition:
         2 of them

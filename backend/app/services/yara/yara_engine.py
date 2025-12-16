@@ -1,28 +1,42 @@
-import yara
+import subprocess
 import os
+import glob
 
 BASE_DIR = os.path.dirname(__file__)
 RULES_DIR = os.path.join(BASE_DIR, "rules")
-
-def load_rules():
-    rule_files = {}
-
-    for file in os.listdir(RULES_DIR):
-        if file.endswith(".yar"):
-            rule_files[file] = os.path.join(RULES_DIR, file)
-
-    return yara.compile(filepaths=rule_files)
+YARA_EXE = os.getenv(
+    "YARA_EXE",
+    r"C:\Users\Limani\tools\yara\yara.exe"
+)
 
 def scan_file(file_path):
-    rules = load_rules()
-    matches = rules.match(file_path)
+    try:
+        if not os.path.exists(YARA_EXE):
+            raise FileNotFoundError(f"YARA executable not found at {YARA_EXE}")
 
-    results = []
-    for match in matches:
-        results.append({
-            "rule": match.rule,
-            "tags": match.tags,
-            "meta": match.meta
-        })
+        rule_files = glob.glob(os.path.join(RULES_DIR, "*.yar"))
+        matches = []
 
-    return results
+        for rule in rule_files:
+            result = subprocess.run(
+                [YARA_EXE, rule, file_path],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            for line in result.stdout.splitlines():
+                rule_name = line.split()[0]
+                matches.append({
+                    "rule": rule_name,
+                    "meta": {
+                        "severity": "medium",
+                        "description": "Detected via YARA signature"
+                    }
+                })
+
+        return matches
+
+    except Exception as e:
+        print("[YARA ERROR]", e)
+        return []

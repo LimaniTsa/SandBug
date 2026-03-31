@@ -156,6 +156,7 @@ SandBug/
 ├── backend/
 │   ├── app/
 │   │   ├── api/
+│   │   │   ├── __init__.py
 │   │   │   ├── analysis.py        # File upload, URL check, report download endpoints
 │   │   │   ├── auth.py            # Register, login, JWT endpoints
 │   │   │   └── info.py            # Features list, health check
@@ -164,17 +165,24 @@ SandBug/
 │   │   ├── models/
 │   │   │   └── __init__.py        # SQLAlchemy models (Analysis, User)
 │   │   ├── services/
-│   │   │   ├── static_analyzer.py # PE analysis, entropy, YARA matching
-│   │   │   ├── dynamic_analyzer.py# Triage sandbox integration
-│   │   │   ├── url_analyzer.py    # URL threat analysis engine
+│   │   │   ├── __init__.py
 │   │   │   ├── ai_summarizer.py   # Claude Haiku summary generation
+│   │   │   ├── dynamic_analyzer.py# Triage sandbox integration
 │   │   │   ├── report_generator.py# PDF report builder
+│   │   │   ├── static_analyzer.py # PE analysis, entropy, YARA matching
 │   │   │   ├── triage_client.py   # Triage API client
-│   │   │   └── yara/rules/        # YARA rule files (generic, ransomware, packers)
+│   │   │   ├── url_analyzer.py    # URL threat analysis engine
+│   │   │   └── yara/
+│   │   │       ├── __init__.py
+│   │   │       ├── yara_engine.py
+│   │   │       └── rules/
+│   │   │           ├── generic.yar
+│   │   │           ├── packers.yar
+│   │   │           └── ransomware.yar
+│   │   ├── tasks.py               # RQ background task definitions
 │   │   └── __init__.py            # App factory
-│   ├── tasks.py                   # RQ background task definitions
-│   ├── worker.py                  # RQ worker entry point
 │   ├── run.py                     # Flask dev server entry point
+│   ├── worker.py                  # RQ worker entry point
 │   └── requirements.txt
 │
 ├── frontend/
@@ -184,6 +192,7 @@ SandBug/
 │   │   │   │   ├── AnalysisOverview.tsx  # Main results renderer (file + URL)
 │   │   │   │   ├── AnalysisProgress.tsx  # Polling progress indicator
 │   │   │   │   ├── FeatureCard.tsx       # Landing page feature cards
+│   │   │   │   ├── Iridescence.tsx       # Light mode hero background
 │   │   │   │   └── LiquidEther.tsx       # Dark mode hero background
 │   │   │   └── layout/
 │   │   │       ├── Header.tsx
@@ -191,18 +200,23 @@ SandBug/
 │   │   ├── hooks/
 │   │   │   └── useAnalysisPoller.ts     # Polls analysis status until complete
 │   │   ├── pages/
-│   │   │   ├── Landing.tsx
 │   │   │   ├── Dashboard.tsx            # File upload + URL check interface
-│   │   │   ├── Results.tsx              # Analysis results page
 │   │   │   ├── History.tsx              # User analysis history
+│   │   │   ├── Landing.tsx
 │   │   │   ├── Login.tsx
-│   │   │   └── Register.tsx
+│   │   │   ├── Register.tsx
+│   │   │   └── Results.tsx              # Analysis results page
 │   │   ├── services/
 │   │   │   └── api.ts
+│   │   ├── styles/
+│   │   │   └── globals.css
+│   │   ├── types/
+│   │   │   └── index.ts
 │   │   ├── utils/
 │   │   │   └── generateReport.ts        # PDF download helper
-│   │   └── styles/
-│   │       └── globals.css
+│   │   ├── App.tsx
+│   │   ├── index.tsx
+│   │   └── index.css
 │   └── package.json
 │
 ├── README.md

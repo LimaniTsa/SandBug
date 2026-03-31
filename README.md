@@ -7,14 +7,14 @@ SandBug is a web-based threat analysis platform that combines static file analys
 
 ## Features
 
-- **Static File Analysis** — PE header inspection, entropy analysis, section analysis, import table parsing, and YARA signature matching (generic malware, ransomware, and packer rules)
-- **Dynamic Sandboxing** — Automated behavioural analysis via the Triage sandbox; captures network activity, process trees, dropped files, registry changes, and threat signatures
-- **URL Analysis** — Redirect chain following, SSL certificate validation, IP reputation (AbuseIPDB), Google Safe Browsing lookup, heuristic scoring, and a dedicated IP grabber detection engine
-- **AI-Generated Summaries** — Plain-English threat summaries powered by Claude Haiku (Anthropic), generated for both file and URL analyses
-- **Risk Scoring** — Combined risk score (0–100) derived from static indicators, dynamic sandbox score, and URL threat signals, mapped to Low / Medium / High / Critical levels
-- **PDF Report Export** — Downloadable PDF report for every analysis
-- **Analysis History** — Registered users can view, filter, and revisit all previous analyses
-- **Guest Mode** — Full analysis functionality available without an account; results are not persisted
+- **Static File Analysis:** PE header inspection, entropy analysis, section analysis, import table parsing, and YARA signature matching (generic malware, ransomware, and packer rules)
+- **Dynamic Sandboxing:** Automated behavioural analysis via the Triage sandbox; captures network activity, process trees, dropped files, registry changes, and threat signatures
+- **URL Analysis:** Redirect chain following, SSL certificate validation, IP reputation (AbuseIPDB), Google Safe Browsing lookup, heuristic scoring, and a dedicated IP grabber detection engine
+- **AI-Generated Summaries:** Plain-English threat summaries powered by Claude Haiku (Anthropic), generated for both file and URL analyses
+- **Risk Scoring:** Combined risk score (0-100) derived from static indicators, dynamic sandbox score, and URL threat signals, mapped to Low / Medium / High / Critical levels
+- **PDF Report Export:** Downloadable PDF report for every analysis
+- **Analysis History:** Registered users can view, filter, and revisit all previous analyses
+- **Guest Mode:** Full analysis functionality available without an account; results are not persisted
 
 ---
 

@@ -48,10 +48,11 @@ class StaticAnalyser:
             self._analyse_file_info()
             self._analyse_pe_structure()
             self._calculate_entropy()
-            self._extract_strings()
 
             if self._is_compressed_format():
                 self._analyse_jar()
+            else:
+                self._extract_strings()
 
             self._detect_suspicious_indicators()
             self._run_yara_scan()
@@ -249,9 +250,15 @@ class StaticAnalyser:
         """
         Verify Authenticode signature via PowerShell.
         HashMismatch/NotTrusted is itself a risk signal and raises the score.
+        Only attempted for PE files on Windows.
         """
         import subprocess
+        import platform
         sig = {'status': 'NotSigned', 'valid': False, 'publisher': None}
+        # Skip for non-PE files and non-Windows (Railway runs Linux)
+        if self._is_compressed_format() or platform.system() != 'Windows':
+            self.results['signature'] = sig
+            return
         try:
             path = str(self.file_path)
             ps_cmd = (
@@ -403,11 +410,11 @@ class StaticAnalyser:
                         pass
 
                 # Scan strings in class files for suspicious API calls
-                scan_limit = min(len(class_files), 50)
+                scan_limit = min(len(class_files), 15)
                 seen = set()
                 for name in class_files[:scan_limit]:
                     try:
-                        data = zf.read(name)
+                        data = zf.read(name)[:65536]  # cap at 64 KB per class
                         text = data.decode('utf-8', errors='ignore').lower()
                         for pat in JAR_SUSPICIOUS:
                             if pat in text and pat not in seen:

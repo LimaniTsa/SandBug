@@ -766,11 +766,6 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
                 ))}
               </div>
             )}
-            {threatIntel.mb_url && (
-              <a href={threatIntel.mb_url} target="_blank" rel="noopener noreferrer" className="ov-mb-link">
-                View on MalwareBazaar <ArrowRight size={12} />
-              </a>
-            )}
           </div>
         </div>
       )}

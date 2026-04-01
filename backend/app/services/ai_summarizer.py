@@ -101,6 +101,15 @@ def summarise_file(
                                       for s in (static_analysis.get('sections') or [])[:6]],
         }
 
+        if static_analysis.get('jar_info'):
+            ji = static_analysis['jar_info']
+            static_summary['jar_info'] = {
+                'class_count':       ji.get('class_count', 0),
+                'main_class':        ji.get('manifest', {}).get('Main-Class'),
+                'suspicious_apis':   [i for i in static_analysis.get('suspicious_indicators', [])
+                                      if 'Java API' in i][:8],
+            }
+
         dynamic_summary = None
         if dynamic_analysis and not dynamic_analysis.get('error'):
             dynamic_summary = {

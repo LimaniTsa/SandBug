@@ -2,6 +2,7 @@ import pefile
 import math
 import re
 import hashlib
+import zipfile
 from collections import Counter
 from typing import Dict, List, Any, Optional
 import magic
@@ -34,6 +35,11 @@ class StaticAnalyser:
             'risk_score': 0
         }
 
+    def _is_compressed_format(self) -> bool:
+        """Returns True for formats that are inherently compressed (JAR, ZIP, APK, etc.)."""
+        ext = self.file_path.suffix.lower()
+        return ext in {'.jar', '.zip', '.apk', '.war', '.ear', '.aar'}
+
     def analyse(self) -> Dict[str, Any]:
         try:
             with open(self.file_path, 'rb') as f:
@@ -43,6 +49,10 @@ class StaticAnalyser:
             self._analyse_pe_structure()
             self._calculate_entropy()
             self._extract_strings()
+
+            if self._is_compressed_format():
+                self._analyse_jar()
+
             self._detect_suspicious_indicators()
             self._run_yara_scan()
             self._check_digital_signature()
@@ -348,13 +358,83 @@ class StaticAnalyser:
 
         self.results['suspicious_indicators'] = list(dict.fromkeys(indicators))[:50]
 
+    def _analyse_jar(self):
+        """Basic analysis for JAR/APK/ZIP-based formats."""
+        JAR_SUSPICIOUS = [
+            'runtime.exec', 'processbuilder', 'reflection', 'classloader',
+            'urlclassloader', 'definclass', 'invoke', 'socket', 'serversocket',
+            'httpurlconnection', 'base64', 'cipher', 'secretkey', 'keyspec',
+            'objenesis', 'javassist', 'asm.', 'bytebuddy',
+        ]
+        JAR_NETWORK = [
+            'java/net/socket', 'java/net/url', 'java/net/httpurlconnection',
+            'okhttp', 'apache/http',
+        ]
+
+        indicators = []
+        jar_info = {'class_count': 0, 'manifest': {}, 'suspicious_classes': []}
+
+        try:
+            with zipfile.ZipFile(self.file_path, 'r') as zf:
+                names = zf.namelist()
+                class_files = [n for n in names if n.endswith('.class')]
+                jar_info['class_count'] = len(class_files)
+
+                # Check for obfuscated class names (very short / single char)
+                obfuscated = [n for n in class_files
+                              if len(n.split('/')[-1].replace('.class', '')) <= 2]
+                if len(obfuscated) > 10:
+                    indicators.append(
+                        f'Heavily obfuscated class names ({len(obfuscated)} single/double-char classes)'
+                    )
+
+                # Parse MANIFEST.MF
+                if 'META-INF/MANIFEST.MF' in names:
+                    try:
+                        manifest_text = zf.read('META-INF/MANIFEST.MF').decode('utf-8', errors='ignore')
+                        for line in manifest_text.splitlines():
+                            if ':' in line:
+                                k, _, v = line.partition(':')
+                                jar_info['manifest'][k.strip()] = v.strip()
+                        main_class = jar_info['manifest'].get('Main-Class', '')
+                        if main_class and len(main_class) <= 3:
+                            indicators.append(f'Obfuscated Main-Class: {main_class}')
+                    except Exception:
+                        pass
+
+                # Scan strings in class files for suspicious API calls
+                scan_limit = min(len(class_files), 50)
+                seen = set()
+                for name in class_files[:scan_limit]:
+                    try:
+                        data = zf.read(name)
+                        text = data.decode('utf-8', errors='ignore').lower()
+                        for pat in JAR_SUSPICIOUS:
+                            if pat in text and pat not in seen:
+                                indicators.append(f'Suspicious Java API: {pat}')
+                                seen.add(pat)
+                        for pat in JAR_NETWORK:
+                            if pat in text and pat not in seen:
+                                indicators.append(f'Network Java API: {pat}')
+                                seen.add(pat)
+                    except Exception:
+                        continue
+
+        except Exception as e:
+            jar_info['error'] = str(e)
+
+        self.results['jar_info'] = jar_info
+        existing = self.results.get('suspicious_indicators', [])
+        self.results['suspicious_indicators'] = (existing + indicators)[:50]
+
     def _calculate_risk_score(self):
         """
         Score 0-100. YARA is the primary signal.
         Clean executables score 0-20; clear malware 65-100.
-        Only extreme entropy (>=7.2) is penalised to avoid false positives.
+        Entropy is NOT penalised for compressed formats (JAR, ZIP, APK).
         """
         score = 0
+        is_compressed = self._is_compressed_format()
 
         yara_pts = 0
         for match in self.results.get('yara', {}).get('rules', []):
@@ -367,17 +447,19 @@ class StaticAnalyser:
                 yara_pts += 5
         score += min(yara_pts, 60)
 
-        entropy = self.results['entropy'].get('overall', 0)
-        if entropy >= 7.8:
-            score += 6
-        elif entropy >= 7.5:
-            score += 2
+        # Skip entropy penalty for formats that are inherently compressed
+        if not is_compressed:
+            entropy = self.results['entropy'].get('overall', 0)
+            if entropy >= 7.8:
+                score += 6
+            elif entropy >= 7.5:
+                score += 2
 
-        packed = sum(
-            1 for s in self.results['sections']
-            if s.get('entropy', 0) >= 7.5
-        )
-        score += min(packed * 3, 6)
+            packed = sum(
+                1 for s in self.results['sections']
+                if s.get('entropy', 0) >= 7.5
+            )
+            score += min(packed * 3, 6)
 
         inds = self.results.get('suspicious_indicators', [])
         inj_count   = sum(1 for i in inds if i.startswith('Process injection'))
@@ -388,6 +470,13 @@ class StaticAnalyser:
 
         cmd_count = sum(1 for i in inds if i.startswith('Command execution'))
         score += min(cmd_count * 3, 5)
+
+        # JAR-specific scoring
+        jar_inds = self.results.get('suspicious_indicators', [])
+        obf_count = sum(1 for i in jar_inds if 'Obfuscated' in i or 'obfuscated' in i)
+        java_api_count = sum(1 for i in jar_inds if i.startswith('Suspicious Java API'))
+        score += min(obf_count * 10, 20)
+        score += min(java_api_count * 3, 15)
 
         sig_status = self.results.get('signature', {}).get('status', 'NotSigned')
         if sig_status in ('HashMismatch', 'NotTrusted'):

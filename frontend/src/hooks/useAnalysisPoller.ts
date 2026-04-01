@@ -1,18 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 
-// ── Config ────────────────────────────────────────────────────────────────────
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+// How often to poll while analysis is in progress
 const POLL_INTERVAL_MS = 4000;
-
-// ── Status → UI label + progress ─────────────────────────────────────────────
 
 interface StageInfo {
   label: string;
   sub: string;
-  progress: number; // 0-100
+  progress: number;
 }
 
+// Maps backend status strings to UI labels and progress percentages
 const STATUS_MAP: Record<string, StageInfo> = {
   processing: {
     label: 'Preparing analysis',
@@ -56,9 +56,8 @@ const STATUS_MAP: Record<string, StageInfo> = {
   },
 };
 
+// Statuses that stop polling
 const TERMINAL_STATUSES = new Set(['completed', 'dynamic_failed', 'failed']);
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface PollerResult {
   status:     string;
@@ -69,8 +68,6 @@ export interface PollerResult {
   isRunning:  boolean;
   error:      string | null;
 }
-
-// ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useAnalysisPoller(analysisId: number): PollerResult {
   const [status,   setStatus]   = useState('processing');
@@ -86,7 +83,7 @@ export function useAnalysisPoller(analysisId: number): PollerResult {
         : {};
 
       const resp = await axios.get<{ analysis: any }>(
-        `http://localhost:5000/api/analysis/${analysisId}`,
+        `${API_BASE}/analysis/${analysisId}`,
         config
       );
 
@@ -95,13 +92,14 @@ export function useAnalysisPoller(analysisId: number): PollerResult {
       setAnalysis(a);
       setError(null);
 
+      // Keep polling until a terminal status is reached
       if (!TERMINAL_STATUSES.has(a.status)) {
         timerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
       }
     } catch (err: any) {
       const msg = err.response?.data?.error ?? 'Failed to fetch analysis status.';
       setError(msg);
-      // Retry even on network errors
+      // Back off on error before retrying
       timerRef.current = setTimeout(poll, POLL_INTERVAL_MS * 2);
     }
   }, [analysisId]);

@@ -1,5 +1,5 @@
 {
   "build": {
-    "cmd": "npm install && DISABLE_ESLINT_PLUGIN=true npm run build"
+    "cmd": "npm install && DISABLE_ESLINT_PLUGIN=true REACT_APP_API_URL=$REACT_APP_API_URL npm run build"
   }
 }

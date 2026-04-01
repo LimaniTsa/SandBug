@@ -2,6 +2,7 @@ import pefile
 import math
 import re
 import hashlib
+from collections import Counter
 from typing import Dict, List, Any, Optional
 import magic
 from app.services.yara.yara_engine import scan_file
@@ -69,7 +70,12 @@ class StaticAnalyser:
 
     def _analyse_pe_structure(self):
         try:
-            self.pe = pefile.PE(data=self.file_data)
+            self.pe = pefile.PE(data=self.file_data, fast_load=True)
+            self.pe.parse_data_directories(directories=[
+                pefile.DIRECTORY_ENTRY['IMAGE_DIRECTORY_ENTRY_IMPORT'],
+                pefile.DIRECTORY_ENTRY['IMAGE_DIRECTORY_ENTRY_EXPORT'],
+                pefile.DIRECTORY_ENTRY['IMAGE_DIRECTORY_ENTRY_SECURITY'],
+            ])
 
             dos_header = {
                 'e_magic': hex(self.pe.DOS_HEADER.e_magic),
@@ -133,22 +139,7 @@ class StaticAnalyser:
             data = section.get_data()
             if not data:
                 return 0.0
-
-            byte_counts = [0] * 256
-            for byte in data:
-                byte_counts[byte] += 1
-
-            entropy = 0.0
-            data_len = len(data)
-
-            for count in byte_counts:
-                if count == 0:
-                    continue
-                probability = float(count) / data_len
-                entropy -= probability * math.log2(probability)
-
-            return round(entropy, 2)
-
+            return round(self._entropy_of(data), 2)
         except Exception:
             return 0.0
 
@@ -184,29 +175,25 @@ class StaticAnalyser:
         except Exception:
             pass
 
+    def _entropy_of(self, data: bytes) -> float:
+        if not data:
+            return 0.0
+        data_len = len(data)
+        entropy = 0.0
+        for count in Counter(data).values():
+            p = count / data_len
+            entropy -= p * math.log2(p)
+        return entropy
+
     def _calculate_entropy(self):
         try:
             if not self.file_data:
                 return
-
-            byte_counts = [0] * 256
-            for byte in self.file_data:
-                byte_counts[byte] += 1
-
-            entropy = 0.0
-            data_len = len(self.file_data)
-
-            for count in byte_counts:
-                if count == 0:
-                    continue
-                probability = float(count) / data_len
-                entropy -= probability * math.log2(probability)
-
+            entropy = self._entropy_of(self.file_data)
             self.results['entropy'] = {
                 'overall': round(entropy, 2),
                 'interpretation': self._interpret_entropy(entropy)
             }
-
         except Exception as e:
             self.results['entropy']['error'] = str(e)
 

@@ -126,7 +126,7 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
           <Clock size={13} />
           <span>
             {progress < 35
-              ? 'Usually completes in under 3 minutes'
+              ? 'Usually completes within 5 minutes'
               : progress < 75
               ? 'Sandbox running, almost there…'
               : 'Finishing up…'

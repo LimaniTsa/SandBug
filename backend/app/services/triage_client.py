@@ -6,8 +6,8 @@ import requests
 logger = logging.getLogger(__name__)
 
 TRIAGE_BASE_URL = "https://tria.ge/api/v0"
-POLL_INTERVAL_S  = 10   # seconds between status checks
-ANALYSIS_TIMEOUT_S = 360  # 6 minutes max wait
+POLL_INTERVAL_S  = 10    # seconds between status checks
+ANALYSIS_TIMEOUT_S = 300  # 5 minutes max wait
 
 
 class TriageError(Exception):

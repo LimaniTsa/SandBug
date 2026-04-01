@@ -18,9 +18,7 @@ def _get_api_key() -> str:
     """Read the key fresh each call so .env changes take effect without restart."""
     return os.getenv('ANTHROPIC_API_KEY', '')
 
-# Internal helpers
 def _call_claude(system_prompt: str, user_content: str, max_tokens: int = 600) -> str:
-    """Make a single call to Claude Haiku and return the text response."""
     api_key = _get_api_key()
     if not api_key:
         return ''
@@ -59,7 +57,6 @@ def _truncate(obj, max_chars: int = 8000) -> str:
         s = s[:max_chars] + '... [truncated]'
     return s
 
-# File analysis summary
 FILE_SYSTEM_PROMPT = """You are a malware analyst assistant for SandBug, a sandbox analysis platform.
 Your job is to write clear, concise summaries of file analysis results.
 
@@ -91,7 +88,6 @@ def summarise_file(
         return ''
 
     try:
-        # Build a condensed version of the data to keep the prompt small
         static_summary = {
             'risk_score':            static_analysis.get('risk_score'),
             'entropy':               static_analysis.get('entropy', {}).get('overall'),
@@ -134,7 +130,6 @@ Dynamic analysis:
         return ''
 
 
-# URL analysis summary
 URL_SYSTEM_PROMPT = """You are a cybersecurity analyst assistant for SandBug, a URL threat analysis platform.
 Your job is to write clear, concise summaries of URL threat scan results.
 

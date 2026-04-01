@@ -14,6 +14,7 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
     from app.services.static_analyzer import analyse_file as static_analyse_file
     from app.services.dynamic_analyzer import analyse_file as dynamic_analyse_file, merge_risk_score
     from app.services.ai_summarizer import summarise_file
+    from app.services import storage
 
     CLAUDE_MODEL = 'claude-haiku-4-5-20251001'
 
@@ -26,7 +27,8 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
         static_raw        = None
         static_risk_score = 0
         try:
-            static_raw        = static_analyse_file(file_path)
+            with storage.local_path(file_path) as local_file:
+                static_raw = static_analyse_file(local_file)
             static_risk_score = static_raw.get('risk_score', 0)
 
             sig      = static_raw.get('signature', {})
@@ -83,7 +85,8 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
             except Exception:
                 db.session.rollback()
 
-        dynamic_raw    = dynamic_analyse_file(file_path, filename, on_status=_on_status)
+        with storage.local_path(file_path) as local_file:
+            dynamic_raw = dynamic_analyse_file(local_file, filename, on_status=_on_status)
         dynamic_failed = 'error' in dynamic_raw
         triage         = dynamic_raw['results'].get('triage')
 

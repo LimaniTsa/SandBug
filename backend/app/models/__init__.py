@@ -41,12 +41,9 @@ class Analysis(db.Model):
     triage_sample_id  = db.Column(db.String(100))
     error_message     = db.Column(db.Text)
 
-    # Internal — not in the public schema but needed for file storage and deletion
     file_path         = db.Column(db.String(500), nullable=True)
-    # For URL analyses: links to the UrlAnalysis record that holds the full result
     url_analysis_id   = db.Column(db.Integer, db.ForeignKey('url_analyses.id'), nullable=True)
 
-    # Relationships
     static_result  = db.relationship('StaticResult',  backref='analysis', uselist=False,
                                       cascade='all, delete-orphan')
     yara_matches   = db.relationship('YaraMatch',     backref='analysis', lazy=True,
@@ -177,7 +174,7 @@ class StaticResult(db.Model):
     entropy           = db.Column(db.Float)
     is_packed         = db.Column(db.Boolean)
     is_signed         = db.Column(db.Boolean)
-    publisher         = db.Column(db.String(255))   # Authenticode CN= value
+    publisher         = db.Column(db.String(255))
     imports           = db.Column(db.JSON)
     sections          = db.Column(db.JSON)
     strings_extracted = db.Column(db.JSON)

@@ -117,18 +117,32 @@ def upload_file():
                 'error': f'File type not allowed. Allowed types: {", ".join(current_app.config["ALLOWED_EXTENSIONS"])}'
             }), 400
 
+        from app.services import storage
+
         original_filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         unique_filename = f"{timestamp}_{original_filename}"
 
-        upload_folder = current_app.config['UPLOAD_FOLDER']
-        os.makedirs(upload_folder, exist_ok=True)
-        file_path = os.path.join(upload_folder, unique_filename)
-        file.save(file_path)
+        file_bytes = file.read()
+        file_size  = len(file_bytes)
 
-        file_size = os.path.getsize(file_path)
-        file_hash = get_file_hash(file_path)
-        file_type = get_file_type(file_path)
+        # Write to a temp file for hashing and type detection before storage.
+        import tempfile
+        with tempfile.NamedTemporaryFile(
+            suffix=os.path.splitext(original_filename)[1] or '.bin',
+            delete=False,
+        ) as tmp:
+            tmp.write(file_bytes)
+            tmp_path = tmp.name
+
+        try:
+            file_hash = get_file_hash(tmp_path)
+            file_type = get_file_type(tmp_path)
+        finally:
+            os.remove(tmp_path)
+
+        storage_key = storage.save(file_bytes, unique_filename)
+        file_path   = storage_key
 
         # URL analyses are intentionally excluded — the same URL must always
         # trigger a fresh run since threat data changes and new detectors are added.
@@ -138,7 +152,7 @@ def upload_file():
                 file_hash=file_hash
             ).filter(Analysis.file_type != 'URL').first()
             if existing:
-                os.remove(file_path)
+                storage.delete(storage_key)
                 return jsonify({
                     'message': 'File already analysed',
                     'duplicate': True,
@@ -382,11 +396,9 @@ def delete_analysis(analysis_id):
         if analysis.user_id != user_id:
             return jsonify({'error': 'Access denied'}), 403
 
-        if analysis.file_path and os.path.exists(analysis.file_path):
-            try:
-                os.remove(analysis.file_path)
-            except OSError:
-                pass  # log but don't block the delete
+        if analysis.file_path:
+            from app.services import storage
+            storage.delete(analysis.file_path)
 
         db.session.delete(analysis)
         db.session.commit()

@@ -5,7 +5,6 @@ from app.services.triage_client import TriageClient, TriageError, TriageTimeoutE
 
 logger = logging.getLogger(__name__)
 
-# Triage score to risk score mapping (0-10 → 0-100)
 _TRIAGE_SCORE_MAP = {
     0:  0,
     1:  4,
@@ -22,24 +21,6 @@ _TRIAGE_SCORE_MAP = {
 
 
 def analyse_file(file_path: str, filename: str, on_status=None) -> dict:
-    """
-    Run dynamic analysis via Hatching Triage.
-
-    on_status: optional callable(status_str) forwarded to the Triage client
-               so callers can receive live status transitions.
-
-    Returns:
-        {
-            "results": {
-                "triage":           {...} | None,
-                "hybrid_analysis":  None,   # always None — HA removed
-            },
-            "dynamic_risk_score": int,   # 0-100
-            "triage_risk_score":  int,
-            "ha_risk_score":      0,
-            "error":              str    # only present when Triage fails
-        }
-    """
     try:
         with open(file_path, "rb") as fh:
             file_bytes = fh.read()
@@ -94,20 +75,9 @@ def merge_risk_score(
     is_signed: bool = False,
 ) -> int:
     """
-    Combine static (0-100) and dynamic (0-100) scores.
-
-    Weights — 50 % static / 50 % dynamic with a single sandbox.
-    Trusting static and dynamic equally is appropriate when there is only
-    one sandbox result rather than a two-sandbox consensus.
-
-    is_signed — True when the file carries a valid Authenticode certificate.
-    A valid signature from a trusted CA is the strongest available clean-file
-    signal (virtually no malware is signed by a trusted CA), so the merged
-    score is halved.  This alone is enough to keep a legitimately-signed
-    installer with a mid-range Triage score in the LOW band.
-
-    If dynamic analysis failed, the static score is used unchanged so that
-    a broken sandbox run never suppresses valid static findings.
+    Combines static and dynamic scores (50/50 weight).
+    A valid Authenticode signature halves the merged score — signed malware is extremely rare.
+    Falls back to static score alone if dynamic analysis failed.
     """
     static_score = max(0, min(100, static_score or 0))
 
@@ -123,10 +93,7 @@ def merge_risk_score(
     return max(0, min(100, merged))
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
 def _triage_score_to_risk_score(triage_score: int) -> int:
-    """Convert Triage 0-10 integer score to SandBug's 0-100 risk_score."""
     clamped = max(0, min(10, int(triage_score or 0)))
     return _TRIAGE_SCORE_MAP[clamped]
 

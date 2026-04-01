@@ -14,6 +14,7 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
     from app.services.static_analyzer import analyse_file as static_analyse_file
     from app.services.dynamic_analyzer import analyse_file as dynamic_analyse_file, merge_risk_score
     from app.services.ai_summarizer import summarise_file
+    from app.services.threat_intel import lookup_hash
     from app.services import storage
 
     CLAUDE_MODEL = 'claude-haiku-4-5-20251001'
@@ -158,6 +159,14 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
             dynamic_available = not dynamic_failed,
             is_signed         = is_signed,
         )
+
+        # Cross-check hash against MalwareBazaar
+        threat_intel = lookup_hash(record.file_hash or '')
+        record.threat_intel = threat_intel
+        if threat_intel.get('found'):
+            # Confirmed known malware — floor the score at 85
+            merged_score = max(merged_score, 85)
+
         record.risk_score = merged_score
         record.calculate_risk_level()
 

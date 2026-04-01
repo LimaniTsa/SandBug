@@ -61,6 +61,7 @@ const Results: React.FC = () => {
         riskLevel={riskLabel}
         riskScore={analysis?.risk_score ?? 0}
         aiSummary={analysis?.ai_summary ?? null}
+        threatIntel={analysis?.threat_intel ?? null}
         onDownload={handleDownload}
       />
     </div>

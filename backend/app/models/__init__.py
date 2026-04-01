@@ -45,6 +45,7 @@ class Analysis(db.Model):
 
     file_path         = db.Column(db.String(500), nullable=True)
     url_analysis_id   = db.Column(db.Integer, db.ForeignKey('url_analyses.id'), nullable=True)
+    threat_intel      = db.Column(db.JSON, nullable=True)
 
     static_result  = db.relationship('StaticResult',  backref='analysis', uselist=False,
                                       cascade='all, delete-orphan')
@@ -164,6 +165,8 @@ class Analysis(db.Model):
 
         ar = self.ai_report
         data['ai_summary'] = ar.summary if ar else None
+
+        data['threat_intel'] = self.threat_intel
 
         return data
 

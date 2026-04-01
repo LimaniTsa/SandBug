@@ -586,14 +586,14 @@ class ReportPDF(FPDF):
         total  = len(signatures)
         counts = [len(low), len(medium), len(high)]
         colors = [(16, 185, 129), (245, 158, 11), (239, 68, 68)]
-        leg_labels = ['Low (1–3)', 'Medium (4–6)', 'High (7–10)']
+        leg_labels = ['Low (1-3)', 'Medium (4-6)', 'High (7-10)']
 
         chart_top = y
         if title:
             self._font('B', 8)
             self.set_text_color(0, 0, 0)
             self.set_xy(x, chart_top)
-            self.cell(w, 5, title, new_x='LMARGIN', new_y='NEXT')
+            self.cell(w, 5, _s(title), new_x='LMARGIN', new_y='NEXT')
             chart_top += 7
             self._font('', 7)
             self.set_text_color(60, 60, 60)
@@ -646,7 +646,7 @@ class ReportPDF(FPDF):
             self._font('', 5.5)
             self.set_text_color(0, 0, 0)
             self.set_xy(lx + 4, leg_y - 0.5)
-            self.cell(22, 4, f'{label}: {cnt}', new_x='LMARGIN', new_y='NEXT')
+            self.cell(22, 4, _s(f'{label}: {cnt}'), new_x='LMARGIN', new_y='NEXT')
 
         # Right panel: signature list with score badges
         list_x   = cx + radius + 12

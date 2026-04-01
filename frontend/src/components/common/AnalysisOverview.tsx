@@ -61,6 +61,16 @@ interface DynamicData {
   triage?:          TriageData | null;
   hybrid_analysis?: HaData    | null;
 }
+interface ThreatIntel {
+  found:      boolean;
+  source:     string;
+  tags?:      string[];
+  signature?: string | null;
+  file_type?: string | null;
+  first_seen?: string | null;
+  reporter?:  string | null;
+  mb_url?:    string | null;
+}
 interface Props {
   staticData:  StaticData | null;
   dynamicData: DynamicData | null;
@@ -72,6 +82,7 @@ interface Props {
   riskScore?:   number;
   dynamicError?: string | null;
   aiSummary?:   string | null;
+  threatIntel?: ThreatIntel | null;
   onDownload?:  (format: ReportFormat) => Promise<void>;
 }
 
@@ -536,7 +547,7 @@ const DownloadButton: React.FC<{ onDownload: (format: ReportFormat) => Promise<v
   );
 };
 
-const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicError, filename, fileSize, fileType, fileHash, riskLevel, riskScore, aiSummary, onDownload }) => {
+const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicError, filename, fileSize, fileType, fileHash, riskLevel, riskScore, aiSummary, threatIntel, onDownload }) => {
 
   // ── Early return for URL analysis ─────────────────────────────────────────
   // (moved below hooks — see line ~490)
@@ -732,7 +743,40 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          ROW 2 – AI Summary
+          ROW 2 – MalwareBazaar hit banner (when confirmed)
+      ══════════════════════════════════════════════════════════════════════ */}
+      {threatIntel?.found && (
+        <div className="ov-mb-banner">
+          <div className="ov-mb-banner-left">
+            <ShieldAlert size={18} className="ov-mb-icon" />
+            <div>
+              <span className="ov-mb-title">Confirmed Malware — MalwareBazaar</span>
+              <span className="ov-mb-sub">
+                This file is a known malware sample in the abuse.ch database.
+                {threatIntel.signature && <> Family: <strong>{threatIntel.signature}</strong>.</>}
+                {threatIntel.first_seen && <> First seen: <strong>{threatIntel.first_seen.split(' ')[0]}</strong>.</>}
+              </span>
+            </div>
+          </div>
+          <div className="ov-mb-banner-right">
+            {threatIntel.tags && threatIntel.tags.length > 0 && (
+              <div className="ov-mb-tags">
+                {threatIntel.tags.slice(0, 5).map(t => (
+                  <span key={t} className="ov-mb-tag">{t}</span>
+                ))}
+              </div>
+            )}
+            {threatIntel.mb_url && (
+              <a href={threatIntel.mb_url} target="_blank" rel="noopener noreferrer" className="ov-mb-link">
+                View on MalwareBazaar <ArrowRight size={12} />
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          ROW 3 – AI Summary
       ══════════════════════════════════════════════════════════════════════ */}
       <AiSummaryCard summary={aiSummary} />
 

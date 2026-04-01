@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import {
+  PieChart, Pie, Cell, Tooltip,
+  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid,
+} from 'recharts';
 import { Link } from 'react-router-dom';
 import {
   Clock, File, Globe, Trash2, ChevronLeft, ChevronRight,
@@ -115,8 +119,9 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
   // Debounce: only fire fetchHistory 350ms after the user stops typing
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [stats,       setStats]       = useState<StatCounts | null>(null);
+  const [stats,        setStats]        = useState<StatCounts | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [chartAnalyses, setChartAnalyses] = useState<AnalysisSummary[]>([]);
 
   const fetchStats = useCallback(async () => {
     const token = localStorage.getItem('access_token');
@@ -145,6 +150,12 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
         medium:   levelDatas[2].total ?? 0,
         low:      levelDatas[3].total ?? 0,
       });
+
+      const chartRes = await fetch(`${API_BASE}/analysis/history?page=1&per_page=100`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const chartData = await chartRes.json();
+      setChartAnalyses(chartData.analyses ?? []);
     } catch {
     } finally {
       setStatsLoading(false);
@@ -316,9 +327,34 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
 
   const pageNums = pageWindow(page, pages);
 
+  const riskData = useMemo(() => {
+    if (!stats) return [];
+    return [
+      { name: 'Critical', value: stats.critical, color: '#ff2d2d' },
+      { name: 'High',     value: stats.high,     color: '#f97316' },
+      { name: 'Medium',   value: stats.medium,   color: '#eab308' },
+      { name: 'Low',      value: stats.low,      color: '#22c55e' },
+    ].filter(d => d.value > 0);
+  }, [stats]);
+
+  const activityData = useMemo(() => {
+    const days = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const count = chartAnalyses.filter(a => a.submitted_at.startsWith(dateStr)).length;
+      days.push({ date: label, count });
+    }
+    return days;
+  }, [chartAnalyses]);
+
   return (
     <div className="history-page">
       <div className="history-container">
+
+        <h1 className="history-page-title">Analysis History</h1>
 
         <div className="history-stats-bar">
           <div className="hstat-card hstat-total">
@@ -352,6 +388,44 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
             </div>
           </div>
         </div>
+
+        {(riskData.length > 0 || activityData.some(d => d.count > 0)) && (
+          <div className="history-charts">
+            {riskData.length > 0 && (
+              <div className="hchart-card">
+                <h4 className="hchart-title">Risk Distribution</h4>
+                <div className="hchart-donut-wrap">
+                  <PieChart width={160} height={160}>
+                    <Pie data={riskData} cx={80} cy={80} innerRadius={48} outerRadius={72} dataKey="value" strokeWidth={0}>
+                      {riskData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: any, n: any) => [v, n]} />
+                  </PieChart>
+                  <div className="hchart-legend">
+                    {riskData.map(d => (
+                      <span key={d.name} className="hchart-legend-item">
+                        <span className="hchart-legend-dot" style={{ background: d.color }} />
+                        {d.name}: <strong>{d.value}</strong>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="hchart-card hchart-card-grow">
+              <h4 className="hchart-title">Submissions — Last 14 Days</h4>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={activityData} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} interval={1} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} />
+                  <Tooltip cursor={{ fill: 'rgba(124,58,237,0.08)' }} contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} />
+                  <Bar dataKey="count" name="Analyses" fill="#7c3aed" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         <div className="history-toolbar">
           <div className="history-filters">

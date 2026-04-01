@@ -5,7 +5,7 @@ import { login } from '../services/api';
 import './Auth.css';
 
 interface LoginProps {
-  onLoginSuccess: (email: string) => void;
+  onLoginSuccess: (email: string, name?: string) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
@@ -58,7 +58,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       const response = await login(formData.email, formData.password);
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      onLoginSuccess(response.user.email);
+      onLoginSuccess(response.user.email, response.user.name);
       navigate('/dashboard');
     } catch (err: any) {
       const data = err.response?.data ?? {};

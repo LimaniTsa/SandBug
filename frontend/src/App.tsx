@@ -14,6 +14,7 @@ import './styles/globals.css';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
+  const [userName, setUserName] = useState<string | undefined>(undefined);
   const [darkMode, setDarkMode] = useState(() => {
     const stored = localStorage.getItem('theme');
     return stored ? stored === 'dark' : true;
@@ -33,6 +34,7 @@ function App() {
       setIsAuthenticated(true);
       const userData = JSON.parse(user);
       setUserEmail(userData.email);
+      setUserName(userData.name || undefined);
     }
   }, []);
 
@@ -40,11 +42,13 @@ function App() {
     logout();
     setIsAuthenticated(false);
     setUserEmail(undefined);
+    setUserName(undefined);
   };
 
-  const handleAuthSuccess = (email: string) => {
+  const handleAuthSuccess = (email: string, name?: string) => {
     setIsAuthenticated(true);
     setUserEmail(email);
+    setUserName(name || undefined);
   };
 
   return (
@@ -65,6 +69,7 @@ function App() {
                 <Landing
                   isAuthenticated={isAuthenticated}
                   userEmail={userEmail}
+                  userName={userName}
                   darkMode={darkMode}
                 />
               }

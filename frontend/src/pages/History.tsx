@@ -551,7 +551,10 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
                             disabled={downloadingId === a.id || a.status !== 'completed'}
                             title="Download PDF report"
                           >
-                            <Download size={13} className={downloadingId === a.id ? 'spin' : ''} />
+                            {downloadingId === a.id
+                              ? <span className="hist-dl-spinner" />
+                              : <Download size={13} />
+                            }
                           </button>
                         )
                         : <span className="hist-action-spacer" />

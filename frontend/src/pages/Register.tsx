@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { register } from '../services/api';
 import './Auth.css';
 
 interface RegisterProps {
-  onRegisterSuccess: (email: string) => void;
+  onRegisterSuccess: (email: string, name?: string) => void;
 }
 
 const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -64,14 +65,14 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await register(formData.email, formData.password);
-      
+      const response = await register(formData.email, formData.password, formData.name.trim() || undefined);
+
       //store token and user data
-       localStorage.setItem('access_token', response.access_token);
+      localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      
+
       //call parent callback
-      onRegisterSuccess(response.user.email);
+      onRegisterSuccess(response.user.email, response.user.name);
       
       //redirect to dashboard
       navigate('/dashboard');
@@ -98,6 +99,22 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
         )}
 
         <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-group">
+            <label htmlFor="name">
+              <User size={18} />
+              Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Your name"
+              autoComplete="name"
+            />
+          </div>
+
           <div className="form-group">
             <label htmlFor="email">
               <Mail size={18} />

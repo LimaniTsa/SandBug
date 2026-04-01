@@ -23,10 +23,11 @@ const iconMap: { [key: string]: any } = {
 interface LandingProps {
   isAuthenticated: boolean;
   userEmail?: string;
+  userName?: string;
   darkMode?: boolean;
 }
 
-const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail, darkMode }) => {
+const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail, userName, darkMode }) => {
   const navigate = useNavigate();
 
   const [features, setFeatures] = useState<Feature[]>([]);
@@ -50,6 +51,7 @@ const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail, darkMode 
   }, []);
 
   const getUserName = () => {
+    if (userName) return userName;
     if (!userEmail) return '';
     return userEmail.split('@')[0];
   };

@@ -527,6 +527,20 @@
   cursor: not-allowed;
 }
 
+.hist-dl-spinner {
+  display: block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--border, #e5e7eb);
+  border-top-color: var(--primary, #9333ea);
+  border-radius: 50%;
+  animation: hist-dl-spin 0.7s linear infinite;
+}
+
+@keyframes hist-dl-spin {
+  to { transform: rotate(360deg); }
+}
+
 .hist-download-btn:hover:not(:disabled) {
   background: rgba(120, 0, 156, 0.08);
   border-color: rgba(120, 0, 156, 0.35);

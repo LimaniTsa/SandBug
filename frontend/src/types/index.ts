@@ -8,6 +8,7 @@ export interface Feature {
 export interface User {
   id: number;
   email: string;
+  name?: string;
   created_at: string;
   last_login?: string;
 }

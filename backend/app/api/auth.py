@@ -75,6 +75,7 @@ def register():
 
         email = data['email'].strip().lower()
         password = data['password']
+        name = data.get('name', '').strip() or None
 
         if not is_valid_email(email):
             return jsonify({'error': 'Invalid email format'}), 400
@@ -91,6 +92,7 @@ def register():
 
         new_user = User(
             email=email,
+            name=name,
             password_hash=password_hash
         )
 

@@ -211,7 +211,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isAuthenticated }) => {
               <input
                 type="text"
                 className="url-input"
-                placeholder="https://example.com/suspicious-page"
+                placeholder="https://example.com"
                 value={urlInput}
                 onChange={e => { setUrlInput(e.target.value); setUrlStatus({ status: 'idle' }); }}
                 onKeyDown={e => e.key === 'Enter' && handleUrlCheck()}

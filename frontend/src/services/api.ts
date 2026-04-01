@@ -30,8 +30,8 @@ export const healthCheck = async () => {
 };
 
 //auth endpoints 
-export const register = async (email: string, password: string): Promise<AuthResponse> => {
-  const response = await api.post('/auth/register', { email, password });
+export const register = async (email: string, password: string, name?: string): Promise<AuthResponse> => {
+  const response = await api.post('/auth/register', { email, password, name });
   return response.data;
 };
 

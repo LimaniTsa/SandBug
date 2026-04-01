@@ -6,7 +6,8 @@ from werkzeug.utils import secure_filename
 import os
 import hashlib
 import magic
-import zipfile
+import zipfile  # used for BadZipFile exception type
+import pyzipper
 import tempfile
 from datetime import datetime, timezone
 from app.services.ai_summarizer import summarise_url
@@ -37,7 +38,9 @@ def _extract_zip(zip_bytes: bytes) -> tuple[bytes, str] | None:
 
         for pwd in _ZIP_PASSWORDS:
             try:
-                with zipfile.ZipFile(zip_tmp) as zf:
+                with pyzipper.AESZipFile(zip_tmp) as zf:
+                    zf.setpassword(pwd or None)
+
                     # Zip-slip guard
                     real_dir = os.path.realpath(extract_dir)
                     infos = [i for i in zf.infolist() if not i.filename.endswith('/')]
@@ -56,19 +59,18 @@ def _extract_zip(zip_bytes: bytes) -> tuple[bytes, str] | None:
                         None
                     ) or max(infos, key=lambda i: i.file_size)
 
-                    zf.extract(target, extract_dir, pwd=pwd or None)
+                    zf.extract(target, extract_dir)
                     extracted_path = os.path.join(extract_dir, target.filename)
                     with open(extracted_path, 'rb') as ef:
                         data = ef.read()
 
-                    # Use original filename if it has an extension, else keep as-is
-                    name = os.path.basename(target.filename)
-                    return data, name
+                    return data, os.path.basename(target.filename)
 
             except RuntimeError:
-                # Wrong password — try next
-                continue
-            except zipfile.BadZipFile:
+                continue  # wrong password — try next
+            except (zipfile.BadZipFile, Exception) as e:
+                if 'password' in str(e).lower() or 'bad password' in str(e).lower():
+                    continue
                 return None
             except ValueError:
                 raise  # zip-slip — propagate

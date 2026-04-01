@@ -209,26 +209,28 @@ class StaticAnalyser:
 
     def _extract_strings(self, min_length: int = 4, max_strings: int = 500):
         try:
-            ascii_pattern = rb'[\x20-\x7E]{' + str(min_length).encode() + rb',}'
-            ascii_strings = re.findall(ascii_pattern, self.file_data)
-            for s in ascii_strings[:max_strings]:
-                decoded = s.decode('ascii', errors='ignore')
-                if decoded and len(decoded) >= min_length:
-                    self.results['strings']['ascii'].append(decoded)
+            scan_data = self.file_data[:4 * 1024 * 1024]  # scan first 4 MB only
 
-            # UTF-16 LE
-            unicode_pattern = rb'(?:[\x20-\x7E]\x00){' + str(min_length).encode() + rb',}'
-            unicode_strings = re.findall(unicode_pattern, self.file_data)
-            for s in unicode_strings[:max_strings]:
+            ascii_pattern = re.compile(rb'[\x20-\x7E]{' + str(min_length).encode() + rb',}')
+            ascii_results = []
+            for m in ascii_pattern.finditer(scan_data):
+                ascii_results.append(m.group().decode('ascii', errors='ignore'))
+                if len(ascii_results) >= max_strings:
+                    break
+            self.results['strings']['ascii'] = ascii_results
+
+            unicode_pattern = re.compile(rb'(?:[\x20-\x7E]\x00){' + str(min_length).encode() + rb',}')
+            unicode_results = []
+            for m in unicode_pattern.finditer(scan_data):
                 try:
-                    decoded = s.decode('utf-16-le', errors='ignore')
-                    if decoded and len(decoded) >= min_length:
-                        self.results['strings']['unicode'].append(decoded)
-                except:
+                    decoded = m.group().decode('utf-16-le', errors='ignore')
+                    if len(decoded) >= min_length:
+                        unicode_results.append(decoded)
+                        if len(unicode_results) >= max_strings:
+                            break
+                except Exception:
                     continue
-
-            self.results['strings']['ascii'] = self.results['strings']['ascii'][:max_strings]
-            self.results['strings']['unicode'] = self.results['strings']['unicode'][:max_strings]
+            self.results['strings']['unicode'] = unicode_results
 
         except Exception as e:
             self.results['strings']['error'] = str(e)

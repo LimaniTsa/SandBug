@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from concurrent.futures import ThreadPoolExecutor
 
 
 def run_analysis_task(analysis_id: int, file_path: str, filename: str):
@@ -31,44 +30,30 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
         dynamic_failed    = False
         sandbox_skipped_reason = None
 
-        # Run static and dynamic analysis in parallel so neither can mask the other.
-        # Only skip dynamic for files that are digitally signed (trusted publisher).
+        # Static analysis
         try:
             with storage.local_path(file_path) as local_file:
-                local_file_str = str(local_file)
-
-                def _run_static():
-                    return static_analyse_file(local_file_str)
-
-                def _run_dynamic():
-                    return dynamic_analyse_file(local_file_str, filename)
-
-                with ThreadPoolExecutor(max_workers=2) as executor:
-                    f_static  = executor.submit(_run_static)
-                    f_dynamic = executor.submit(_run_dynamic)
-
-                    # Update status as soon as static finishes — dynamic still running in background
-                    try:
-                        static_raw = f_static.result()
-                        record.status = 'static_complete'
-                        db.session.commit()
-                    except Exception as exc:
-                        static_raw = {}
-                        record.error_message = f'Static analysis failed: {exc}'
-                        record.status = 'static_failed'
-                        db.session.commit()
-
-                    # Now wait for dynamic to complete
-                    try:
-                        dynamic_raw = f_dynamic.result()
-                    except Exception as exc:
-                        dynamic_raw = {'error': str(exc), 'dynamic_risk_score': 0, 'results': {}}
-
+                static_raw = static_analyse_file(local_file)
+            record.status = 'static_complete'
         except Exception as exc:
+            static_raw = {}
             record.status        = 'static_failed'
-            record.error_message = f'Analysis failed: {exc}'
-            db.session.commit()
-            return
+            record.error_message = f'Static analysis failed: {exc}'
+        db.session.commit()
+
+        # Dynamic analysis — always run regardless of static score
+        def _on_status(status_str: str):
+            try:
+                record.status = status_str
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        try:
+            with storage.local_path(file_path) as local_file:
+                dynamic_raw = dynamic_analyse_file(local_file, filename, on_status=_on_status)
+        except Exception as exc:
+            dynamic_raw = {'error': str(exc), 'dynamic_risk_score': 0, 'results': {}}
 
         static_risk_score = (static_raw or {}).get('risk_score', 0)
         dynamic_failed    = 'error' in (dynamic_raw or {})

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Clock, File, Globe, Trash2, ChevronLeft, ChevronRight,
   AlertCircle, ShieldOff, RefreshCw, LogIn, Plus,
-  BarChart2, Download, Search, X,
+  Download, Search, X,
 } from 'lucide-react';
 import './History.css';
 
@@ -320,30 +320,6 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
     <div className="history-page">
       <div className="history-container">
 
-        <div className="history-header">
-          <div className="history-heading">
-            <div className="history-heading-icon">
-              <BarChart2 size={20} />
-            </div>
-            <div>
-              <h1>Analysis History</h1>
-            </div>
-          </div>
-          <div className="history-actions">
-            <button
-              className="btn-secondary"
-              onClick={() => { fetchHistory(page, riskFilter, search); fetchStats(); }}
-              disabled={loading}
-            >
-              <RefreshCw size={14} className={loading ? 'spin' : ''} />
-              Refresh
-            </button>
-            <Link to="/dashboard" className="btn-primary">
-              <Plus size={14} /> New Analysis
-            </Link>
-          </div>
-        </div>
-
         <div className="history-stats-bar">
           <div className="hstat-card hstat-total">
             <div className="hstat-label">Total</div>
@@ -389,20 +365,33 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
               </button>
             ))}
           </div>
-          <div className="history-search-wrap">
-            <Search size={14} className="history-search-icon" />
-            <input
-              type="text"
-              className="history-search-input"
-              placeholder="Search by name or URL…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            {search && (
-              <button className="history-search-clear" onClick={() => setSearch('')} title="Clear search">
-                <X size={13} />
-              </button>
-            )}
+          <div className="history-toolbar-right">
+            <div className="history-search-wrap">
+              <Search size={14} className="history-search-icon" />
+              <input
+                type="text"
+                className="history-search-input"
+                placeholder="Search by name or URL…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              {search && (
+                <button className="history-search-clear" onClick={() => setSearch('')} title="Clear search">
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+            <button
+              className="btn-icon-refresh"
+              onClick={() => { fetchHistory(page, riskFilter, search); fetchStats(); }}
+              disabled={loading}
+              title="Refresh"
+            >
+              <RefreshCw size={14} className={loading ? 'spin' : ''} />
+            </button>
+            <Link to="/dashboard" className="btn-primary btn-new-analysis">
+              <Plus size={14} /> New Analysis
+            </Link>
           </div>
         </div>
 

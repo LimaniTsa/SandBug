@@ -65,7 +65,8 @@ Write TWO short paragraphs:
    Use concrete details from the data — don't be vague.
 2. Key findings: the most important indicators, behaviours, or red flags found (2-3 sentences).
    Mention specific YARA rules, suspicious imports, network activity, or dropped files if present.
-   If sandbox analysis was skipped, explain why in this paragraph using the reason provided.
+   If dynamic analysis was skipped, start this paragraph with "Dynamic analysis was not performed —"
+   followed by the reason provided, written in plain English.
 
 Rules:
 - Be direct and factual. No filler phrases like "it is important to note".

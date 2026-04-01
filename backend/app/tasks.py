@@ -78,14 +78,29 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
 
         db.session.commit()
 
-        # Skip sandbox for files that are low-risk and digitally signed —
-        # these are almost always legitimate and don't need behavioural analysis.
+        # Decide whether sandbox is needed based on static risk score and signature.
+        # Thresholds:
+        #   < 20  → no meaningful static indicators, sandbox adds nothing
+        #   20-39 + signed → trusted publisher + low risk, skip
+        #   >= 40 → always sandbox regardless of signature
         is_signed = bool((static_raw or {}).get('signature', {}).get('valid', False))
-        skip_sandbox = is_signed and static_risk_score < 25
-        sandbox_skipped_reason = (
-            'file is digitally signed with a low static risk score, indicating it is likely legitimate'
-            if skip_sandbox else None
-        )
+        publisher = (static_raw or {}).get('signature', {}).get('publisher') or 'a trusted publisher'
+
+        if static_risk_score < 20:
+            skip_sandbox = True
+            sandbox_skipped_reason = (
+                f'static analysis returned a very low risk score ({static_risk_score}/100) with no '
+                f'significant indicators of malicious behaviour, making dynamic analysis unnecessary'
+            )
+        elif static_risk_score < 40 and is_signed:
+            skip_sandbox = True
+            sandbox_skipped_reason = (
+                f'file is digitally signed by {publisher} and has a low static risk score '
+                f'({static_risk_score}/100), indicating it is a legitimate executable'
+            )
+        else:
+            skip_sandbox = False
+            sandbox_skipped_reason = None
 
         if skip_sandbox:
             dynamic_raw    = {'results': {}, 'dynamic_risk_score': 0}

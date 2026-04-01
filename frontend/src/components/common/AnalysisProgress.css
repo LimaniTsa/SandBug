@@ -52,6 +52,8 @@
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-primary);
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .ap-filename {

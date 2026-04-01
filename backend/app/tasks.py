@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor
 
 
 def run_analysis_task(analysis_id: int, file_path: str, filename: str):
@@ -25,99 +26,92 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
             return
 
         static_raw        = None
+        dynamic_raw       = None
         static_risk_score = 0
+        dynamic_failed    = False
+        sandbox_skipped_reason = None
+
+        # Run static and dynamic analysis in parallel so neither can mask the other.
+        # Only skip dynamic for files that are digitally signed (trusted publisher).
         try:
             with storage.local_path(file_path) as local_file:
-                static_raw = static_analyse_file(local_file)
-            static_risk_score = static_raw.get('risk_score', 0)
+                local_file_str = str(local_file)
 
-            sig      = static_raw.get('signature', {})
-            entropy  = static_raw.get('entropy', {}).get('overall', 0)
-            sections = static_raw.get('sections', [])
+                def _run_static():
+                    return static_analyse_file(local_file_str)
 
-            sr = StaticResult(
-                analysis_id       = analysis_id,
-                pe_type           = static_raw.get('file_info', {}).get('file_type'),
-                entropy           = entropy,
-                is_packed         = any(s.get('entropy', 0) >= 7.5 for s in sections),
-                is_signed         = bool(sig.get('valid', False)),
-                publisher         = sig.get('publisher'),
-                imports           = static_raw.get('imports'),
-                sections          = sections,
-                strings_extracted = {
-                    'ascii':   (static_raw.get('strings') or {}).get('ascii',   [])[:100],
-                    'unicode': (static_raw.get('strings') or {}).get('unicode', [])[:100],
-                },
-            )
-            db.session.add(sr)
+                def _run_dynamic():
+                    return dynamic_analyse_file(local_file_str, filename)
 
-            for rule in static_raw.get('yara', {}).get('rules', []):
-                tags = rule.get('tags') or []
-                db.session.add(YaraMatch(
-                    analysis_id     = analysis_id,
-                    rule_name       = rule.get('rule', ''),
-                    category        = tags[0] if tags else None,
-                    severity        = rule.get('meta', {}).get('severity', 'low'),
-                    matched_strings = rule.get('strings'),
-                ))
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    f_static  = executor.submit(_run_static)
+                    f_dynamic = executor.submit(_run_dynamic)
 
-            for ind in static_raw.get('suspicious_indicators', []):
-                db.session.add(IOC(
-                    analysis_id = analysis_id,
-                    ioc_type    = 'indicator',
-                    value       = str(ind)[:500],
-                    source      = 'static',
-                    severity    = 'medium',
-                ))
+                    try:
+                        static_raw = f_static.result()
+                    except Exception as exc:
+                        static_raw = {}
+                        record.error_message = f'Static analysis failed: {exc}'
 
-            record.status = 'static_complete'
+                    try:
+                        dynamic_raw = f_dynamic.result()
+                    except Exception as exc:
+                        dynamic_raw = {'error': str(exc), 'dynamic_risk_score': 0, 'results': {}}
 
         except Exception as exc:
             record.status        = 'static_failed'
-            record.error_message = f'Static analysis failed: {exc}'
+            record.error_message = f'Analysis failed: {exc}'
+            db.session.commit()
+            return
 
-        db.session.commit()
+        static_risk_score = (static_raw or {}).get('risk_score', 0)
+        dynamic_failed    = 'error' in (dynamic_raw or {})
+        triage            = (dynamic_raw or {}).get('results', {}).get('triage')
 
-        # Decide whether sandbox is needed based on static risk score and signature.
-        # Thresholds:
-        #   < 20  → no meaningful static indicators, sandbox adds nothing
-        #   20-39 + signed → trusted publisher + low risk, skip
-        #   >= 40 → always sandbox regardless of signature
         is_signed = bool((static_raw or {}).get('signature', {}).get('valid', False))
-        publisher = (static_raw or {}).get('signature', {}).get('publisher') or 'a trusted publisher'
 
-        if static_risk_score < 20:
-            skip_sandbox = True
-            sandbox_skipped_reason = (
-                f'static analysis returned a very low risk score ({static_risk_score}/100) with no '
-                f'significant indicators of malicious behaviour, making dynamic analysis unnecessary'
-            )
-        elif static_risk_score < 40 and is_signed:
-            skip_sandbox = True
-            sandbox_skipped_reason = (
-                f'file is digitally signed by {publisher} and has a low static risk score '
-                f'({static_risk_score}/100), indicating it is a legitimate executable'
-            )
-        else:
-            skip_sandbox = False
-            sandbox_skipped_reason = None
+        # Write static results to DB
+        sig      = (static_raw or {}).get('signature', {})
+        entropy  = (static_raw or {}).get('entropy', {}).get('overall', 0)
+        sections = (static_raw or {}).get('sections', [])
 
-        if skip_sandbox:
-            dynamic_raw    = {'results': {}, 'dynamic_risk_score': 0}
-            dynamic_failed = False
-            triage         = None
-        else:
-            def _on_status(status_str: str):
-                try:
-                    record.status = status_str
-                    db.session.commit()
-                except Exception:
-                    db.session.rollback()
+        sr = StaticResult(
+            analysis_id       = analysis_id,
+            pe_type           = (static_raw or {}).get('file_info', {}).get('file_type'),
+            entropy           = entropy,
+            is_packed         = any(s.get('entropy', 0) >= 7.5 for s in sections),
+            is_signed         = bool(sig.get('valid', False)),
+            publisher         = sig.get('publisher'),
+            imports           = (static_raw or {}).get('imports'),
+            sections          = sections,
+            strings_extracted = {
+                'ascii':   ((static_raw or {}).get('strings') or {}).get('ascii',   [])[:100],
+                'unicode': ((static_raw or {}).get('strings') or {}).get('unicode', [])[:100],
+            },
+        )
+        db.session.add(sr)
 
-            with storage.local_path(file_path) as local_file:
-                dynamic_raw = dynamic_analyse_file(local_file, filename, on_status=_on_status)
-            dynamic_failed = 'error' in dynamic_raw
-            triage         = dynamic_raw['results'].get('triage')
+        for rule in (static_raw or {}).get('yara', {}).get('rules', []):
+            tags = rule.get('tags') or []
+            db.session.add(YaraMatch(
+                analysis_id     = analysis_id,
+                rule_name       = rule.get('rule', ''),
+                category        = tags[0] if tags else None,
+                severity        = rule.get('meta', {}).get('severity', 'low'),
+                matched_strings = rule.get('strings'),
+            ))
+
+        for ind in (static_raw or {}).get('suspicious_indicators', []):
+            db.session.add(IOC(
+                analysis_id = analysis_id,
+                ioc_type    = 'indicator',
+                value       = str(ind)[:500],
+                source      = 'static',
+                severity    = 'medium',
+            ))
+
+        record.status = 'static_complete'
+        db.session.commit()
 
         if triage:
             record.triage_sample_id = triage.get('sample_id')

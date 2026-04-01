@@ -172,7 +172,7 @@ class StaticResult(db.Model):
     __tablename__     = 'static_results'
     id                = db.Column(db.Integer, primary_key=True)
     analysis_id       = db.Column(db.Integer, db.ForeignKey('analyses.id'), nullable=False)
-    pe_type           = db.Column(db.String(50))
+    pe_type           = db.Column(db.String(500))
     entropy           = db.Column(db.Float)
     is_packed         = db.Column(db.Boolean)
     is_signed         = db.Column(db.Boolean)

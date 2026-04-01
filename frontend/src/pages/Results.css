@@ -64,3 +64,13 @@
 .spin {
   animation: spin 0.8s linear infinite;
 }
+
+@media (max-width: 480px) {
+  .results-page {
+    padding-top: 4.5rem;
+  }
+
+  .results-download-bar {
+    padding: 0 12px;
+  }
+}

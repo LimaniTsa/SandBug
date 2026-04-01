@@ -16,10 +16,27 @@ def _fmt(b) -> str:
     return f'{b/1_048_576:.1f} MB'
 
 
+_UNICODE_REPLACEMENTS = str.maketrans({
+    '\u2014': '-',    # em dash
+    '\u2013': '-',    # en dash
+    '\u2018': "'",    # left single quote
+    '\u2019': "'",    # right single quote
+    '\u201c': '"',    # left double quote
+    '\u201d': '"',    # right double quote
+    '\u2026': '...',  # ellipsis
+    '\u2022': '*',    # bullet
+    '\u00b7': '.',    # middle dot
+    '\u00a0': ' ',    # non-breaking space
+})
+
+
 def _s(v, fallback='-') -> str:
-    """Safe string — strips None, returns fallback for empty values."""
+    """Safe string — strips None, sanitizes Unicode for PDF core fonts."""
     s = str(v).strip() if v is not None else fallback
-    return s if s else fallback
+    if not s:
+        return fallback
+    s = s.translate(_UNICODE_REPLACEMENTS)
+    return s.encode('latin-1', errors='replace').decode('latin-1')
 
 
 def _risk_color(level: str):

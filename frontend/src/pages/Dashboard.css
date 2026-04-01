@@ -478,3 +478,11 @@
   .tab-switcher     { width: 100%; }
   .tab-btn          { flex: 1; justify-content: center; }
 }
+
+@media (max-width: 480px) {
+  .dashboard        { padding: 5rem 0.75rem 2rem; }
+  .welcome-content h1 { font-size: 1.25rem; }
+  .welcome-content p  { font-size: 0.9rem; }
+  .upload-area      { padding: 2rem 1rem; }
+  .welcome-banner   { padding: 1.25rem; }
+}

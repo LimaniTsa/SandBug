@@ -78,17 +78,31 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
 
         db.session.commit()
 
-        def _on_status(status_str: str):
-            try:
-                record.status = status_str
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
+        # Skip sandbox for files that are low-risk and digitally signed —
+        # these are almost always legitimate and don't need behavioural analysis.
+        is_signed = bool((static_raw or {}).get('signature', {}).get('valid', False))
+        skip_sandbox = is_signed and static_risk_score < 25
+        sandbox_skipped_reason = (
+            'file is digitally signed with a low static risk score, indicating it is likely legitimate'
+            if skip_sandbox else None
+        )
 
-        with storage.local_path(file_path) as local_file:
-            dynamic_raw = dynamic_analyse_file(local_file, filename, on_status=_on_status)
-        dynamic_failed = 'error' in dynamic_raw
-        triage         = dynamic_raw['results'].get('triage')
+        if skip_sandbox:
+            dynamic_raw    = {'results': {}, 'dynamic_risk_score': 0}
+            dynamic_failed = False
+            triage         = None
+        else:
+            def _on_status(status_str: str):
+                try:
+                    record.status = status_str
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+
+            with storage.local_path(file_path) as local_file:
+                dynamic_raw = dynamic_analyse_file(local_file, filename, on_status=_on_status)
+            dynamic_failed = 'error' in dynamic_raw
+            triage         = dynamic_raw['results'].get('triage')
 
         if triage:
             record.triage_sample_id = triage.get('sample_id')
@@ -138,9 +152,6 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
         elif dynamic_failed:
             record.error_message = dynamic_raw.get('error')
 
-        is_signed = bool(
-            (static_raw or {}).get('signature', {}).get('valid', False)
-        )
         merged_score = merge_risk_score(
             static_risk_score,
             dynamic_raw['dynamic_risk_score'],
@@ -160,12 +171,13 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
 
         try:
             summary_text = summarise_file(
-                filename         = filename,
-                file_type        = record.file_type or 'Unknown',
-                risk_level       = record.risk_level or 'unknown',
-                risk_score       = int(record.risk_score or 0),
-                static_analysis  = static_raw or {},
-                dynamic_analysis = triage,
+                filename               = filename,
+                file_type              = record.file_type or 'Unknown',
+                risk_level             = record.risk_level or 'unknown',
+                risk_score             = int(record.risk_score or 0),
+                static_analysis        = static_raw or {},
+                dynamic_analysis       = triage,
+                sandbox_skipped_reason = sandbox_skipped_reason,
             )
             if summary_text:
                 db.session.add(AIReport(

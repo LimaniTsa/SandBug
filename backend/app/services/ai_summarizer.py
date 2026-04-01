@@ -65,6 +65,7 @@ Write TWO short paragraphs:
    Use concrete details from the data — don't be vague.
 2. Key findings: the most important indicators, behaviours, or red flags found (2-3 sentences).
    Mention specific YARA rules, suspicious imports, network activity, or dropped files if present.
+   If sandbox analysis was skipped, explain why in this paragraph using the reason provided.
 
 Rules:
 - Be direct and factual. No filler phrases like "it is important to note".
@@ -82,6 +83,7 @@ def summarise_file(
     risk_score: int,
     static_analysis: dict,
     dynamic_analysis: dict | None,
+    sandbox_skipped_reason: str | None = None,
 ) -> str:
     """Generate a summary for a file malware analysis. Returns empty string if no API key."""
     if not _get_api_key():
@@ -111,6 +113,12 @@ def summarise_file(
                 'injected':     sum(1 for p in (dynamic_analysis.get('processes') or []) if p.get('injected')),
             }
 
+        dynamic_section = (
+            f'Skipped — {sandbox_skipped_reason}'
+            if sandbox_skipped_reason
+            else (json.dumps(dynamic_summary, indent=2) if dynamic_summary else 'Not available')
+        )
+
         user_content = f"""Analyse this file and summarise it.
 
 File: {filename}
@@ -121,7 +129,7 @@ Static analysis:
 {json.dumps(static_summary, indent=2)}
 
 Dynamic analysis:
-{json.dumps(dynamic_summary, indent=2) if dynamic_summary else 'Not available'}"""
+{dynamic_section}"""
 
         return _call_claude(FILE_SYSTEM_PROMPT, user_content, max_tokens=250)
 

@@ -26,6 +26,39 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 
+[data-theme="dark"] .navbar {
+  background: rgba(15, 15, 19, 0.4);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .navbar.nav-scrolled {
+  background: rgba(26, 26, 36, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .nav-link-primary {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .nav-link-primary:hover {
+  background: rgba(176, 111, 216, 0.15);
+  border-color: #b06fd8;
+  color: #fff;
+}
+
+[data-theme="dark"] .user-menu {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .user-greeting,
+[data-theme="dark"] .user-email,
+[data-theme="dark"] .logout-btn {
+  color: #f3f4f6;
+}
+
 .navbar-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -45,7 +78,7 @@
 
   font-size: 1.5rem;
   font-weight: 700;
-  color: #78009c;
+  color: var(--primary);
 
   transition: opacity 0.25s ease;
 }
@@ -64,10 +97,18 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  color: #78009c;
-  font-weight: 500;
+  color: var(--text-secondary);
+  font-weight: 600;
 
-  transition: opacity 0.25s ease;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+[data-theme="dark"] .nav-link {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+[data-theme="dark"] .nav-link:hover {
+  color: #fff;
 }
 
 .nav-link:hover {
@@ -78,7 +119,7 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   background: rgba(255, 255, 255, 0.55);
-  color: #78009c;
+  color: var(--primary);
   padding: 0.5rem 1.5rem;
   border-radius: 0.5rem;
   font-weight: 600;
@@ -91,6 +132,22 @@
 .nav-link-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(147, 51, 234, 0.35);
+}
+
+.dark-mode-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  padding: 0.35rem 0.5rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.dark-mode-toggle:hover {
+  background: var(--surface-light);
 }
 
 .user-menu {

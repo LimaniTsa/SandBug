@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { register } from '../services/api';
 import './Auth.css';
 
@@ -17,11 +17,13 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({
     hasLength: false,
     hasUpper: false,
-    hasLower: false,
     hasNumber: false,
+    hasSpecial: false,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,8 +39,8 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
       setPasswordStrength({
         hasLength: value.length >= 8,
         hasUpper: /[A-Z]/.test(value),
-        hasLower: /[a-z]/.test(value),
         hasNumber: /\d/.test(value),
+        hasSpecial: /[!@#$%^&*(),.?":{}|<>\[\]\\\/_+=`~;'\-]/.test(value),
       });
     }
   };
@@ -118,16 +120,26 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
               <Lock size={18} />
               Password
             </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Create a strong password"
-              required
-              autoComplete="new-password"
-            />
+            <div className="input-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Create a strong password"
+                required
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                className="toggle-password"
+                onClick={() => setShowPassword(v => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <div className="form-group">
@@ -135,16 +147,26 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
               <Lock size={18} />
               Confirm Password
             </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm your password"
-              required
-              autoComplete="new-password"
-            />
+            <div className="input-wrapper">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                required
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                className="toggle-password"
+                onClick={() => setShowConfirmPassword(v => !v)}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {/*password strength indicator */}
@@ -160,13 +182,13 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
                   {passwordStrength.hasUpper ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                   <span>One uppercase letter</span>
                 </div>
-                <div className={`strength-check ${passwordStrength.hasLower ? 'valid' : ''}`}>
-                  {passwordStrength.hasLower ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                  <span>One lowercase letter</span>
-                </div>
                 <div className={`strength-check ${passwordStrength.hasNumber ? 'valid' : ''}`}>
                   {passwordStrength.hasNumber ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                   <span>One number</span>
+                </div>
+                <div className={`strength-check ${passwordStrength.hasSpecial ? 'valid' : ''}`}>
+                  {passwordStrength.hasSpecial ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                  <span>One special character</span>
                 </div>
               </div>
             </div>

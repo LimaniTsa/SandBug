@@ -7,15 +7,15 @@ def get_features():
     features = [
         {
             'id': 1,
-            'title': 'Static Analysis',
-            'description': 'Examine file structure, headers, and signatures without execution',
+            'title': 'Malware Analysis',
+            'description': 'Combines static and dynamic analysis: examine file structure, headers, and signatures while monitoring real-time behaviour in an isolated sandbox',
             'icon': 'FileSearch'
         },
         {
             'id': 2,
-            'title': 'Dynamic Analysis',
-            'description': 'Monitor real-time behavior in isolated virtual environment',
-            'icon': 'Activity'
+            'title': 'URL Analysis',
+            'description': 'Scan URLs for malicious content, phishing indicators, and threat intelligence in real time',
+            'icon': 'Globe'
         },
         {
             'id': 3,
@@ -38,7 +38,7 @@ def get_features():
         {
             'id': 6,
             'title': 'Export Reports',
-            'description': 'Download detailed reports in PDF, JSON, or HTML format',
+            'description': 'Download detailed reports in PDF format',
             'icon': 'Download'
         }
     ]

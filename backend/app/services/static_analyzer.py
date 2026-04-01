@@ -37,19 +37,17 @@ class StaticAnalyser:
 
        #perform complete static analysis
         try:
-            # Read file data
             with open(self.file_path, 'rb') as f:
                 self.file_data = f.read()
-            
-            # Perform analysis steps
+
             self._analyse_file_info()
             self._analyse_pe_structure()
             self._calculate_entropy()
             self._extract_strings()
             self._detect_suspicious_indicators()
             self._run_yara_scan()
+            self._check_digital_signature()
             self._calculate_risk_score()
-
             return self.results
 
         except Exception as e:
@@ -77,13 +75,11 @@ class StaticAnalyser:
         try:
             self.pe = pefile.PE(data=self.file_data)
             
-            #DOS Header
             dos_header = {
                 'e_magic': hex(self.pe.DOS_HEADER.e_magic),
                 'e_lfanew': hex(self.pe.DOS_HEADER.e_lfanew)
             }
             
-            #NT Headers
             nt_headers = {
                 'signature': hex(self.pe.NT_HEADERS.Signature),
                 'machine': hex(self.pe.FILE_HEADER.Machine),
@@ -92,7 +88,6 @@ class StaticAnalyser:
                 'characteristics': hex(self.pe.FILE_HEADER.Characteristics)
             }
             
-            #optional Header
             optional_header = {
                 'magic': hex(self.pe.OPTIONAL_HEADER.Magic),
                 'image_base': hex(self.pe.OPTIONAL_HEADER.ImageBase),
@@ -107,13 +102,8 @@ class StaticAnalyser:
                 'optional_header': optional_header
             }
             
-            #analyse sections
             self._analyse_sections()
-            
-            #analyse imports
             self._analyse_imports()
-            
-            #analyse exports
             self._analyse_exports()
             
         except Exception as e:
@@ -132,7 +122,6 @@ class StaticAnalyser:
                     'entropy': self._calculate_section_entropy(section)
                 }
                 
-                #check for suspicious characteristics
                 if section_data['entropy'] > 7.0:
                     section_data['suspicious'] = 'High entropy (possible packed/encrypted)'
                 
@@ -151,12 +140,10 @@ class StaticAnalyser:
             if not data:
                 return 0.0
             
-            #calculate byte frequency
             byte_counts = [0] * 256
             for byte in data:
                 byte_counts[byte] += 1
-            
-            #calculate entropy
+
             entropy = 0.0
             data_len = len(data)
             
@@ -203,7 +190,7 @@ class StaticAnalyser:
                             'address': hex(exp.address)
                         })
         except Exception:
-            pass  #many executables don't have exports
+            pass
     
     def _calculate_entropy(self):
         #calculate overall file entropy
@@ -211,12 +198,10 @@ class StaticAnalyser:
             if not self.file_data:
                 return
             
-            #calculate byte frequency
             byte_counts = [0] * 256
             for byte in self.file_data:
                 byte_counts[byte] += 1
-            
-            #calculate entropy
+
             entropy = 0.0
             data_len = len(self.file_data)
             
@@ -246,29 +231,18 @@ class StaticAnalyser:
             return "Very High (likely packed/encrypted)"
     
     def _extract_strings(self, min_length: int = 4, max_strings: int = 500):
-        """
-        Extract ASCII and Unicode strings from file
-        
-        Args:
-            min_length: Minimum string length to extract
-            max_strings: Maximum number of strings to store
-        """
+        """Extract ASCII and Unicode strings from file."""
         try:
-            # ASCII strings pattern
             ascii_pattern = rb'[\x20-\x7E]{' + str(min_length).encode() + rb',}'
             ascii_strings = re.findall(ascii_pattern, self.file_data)
-            
-            # Decode and store ASCII strings
             for s in ascii_strings[:max_strings]:
                 decoded = s.decode('ascii', errors='ignore')
                 if decoded and len(decoded) >= min_length:
                     self.results['strings']['ascii'].append(decoded)
-            
-            # Unicode strings pattern (UTF-16 LE)
+
+            # UTF-16 LE
             unicode_pattern = rb'(?:[\x20-\x7E]\x00){' + str(min_length).encode() + rb',}'
             unicode_strings = re.findall(unicode_pattern, self.file_data)
-            
-            # Decode and store Unicode strings
             for s in unicode_strings[:max_strings]:
                 try:
                     decoded = s.decode('utf-16-le', errors='ignore')
@@ -276,13 +250,46 @@ class StaticAnalyser:
                         self.results['strings']['unicode'].append(decoded)
                 except:
                     continue
-            
-            # Limit total strings stored
+
             self.results['strings']['ascii'] = self.results['strings']['ascii'][:max_strings]
             self.results['strings']['unicode'] = self.results['strings']['unicode'][:max_strings]
             
         except Exception as e:
             self.results['strings']['error'] = str(e)
+
+    def _check_digital_signature(self):
+        """
+        Verify Authenticode signature via PowerShell (Windows only).
+        A valid signature is a strong clean-file signal; HashMismatch/NotTrusted
+        is itself suspicious and adds to the risk score.
+        Result: results['signature'] = { status, valid, publisher }
+        """
+        import subprocess
+        sig = {'status': 'NotSigned', 'valid': False, 'publisher': None}
+        try:
+            path = str(self.file_path)
+            ps_cmd = (
+                f'$s = Get-AuthenticodeSignature -LiteralPath "{path}"; '
+                f'"$($s.Status)|$($s.SignerCertificate.Subject)"'
+            )
+            out = subprocess.run(
+                ['powershell', '-NoProfile', '-NonInteractive', '-Command', ps_cmd],
+                capture_output=True, text=True, timeout=15,
+            )
+            if out.returncode == 0 and out.stdout.strip():
+                parts = out.stdout.strip().split('|', 1)
+                status  = parts[0].strip()
+                subject = parts[1].strip() if len(parts) > 1 else ''
+                sig['status'] = status
+                sig['valid']  = (status == 'Valid')
+                for field in subject.split(','):
+                    f = field.strip()
+                    if f.upper().startswith('CN='):
+                        sig['publisher'] = f[3:].strip('"').strip()
+                        break
+        except Exception:
+            pass
+        self.results['signature'] = sig
 
     def _run_yara_scan(self):
         """Run YARA signature matching"""
@@ -305,83 +312,124 @@ class StaticAnalyser:
             self.results['yara']['error'] = str(e)
     
     def _detect_suspicious_indicators(self):
-        #detect suspicious indicators in the file
+        """
+        Detect genuinely suspicious behaviours.
+        Avoids noisy patterns (.dll, http://, generic imports) that fire on
+        almost every legitimate file and inflate the risk score unfairly.
+        """
         indicators = []
+
+        # Process-injection / memory-manipulation APIs (high signal)
+        INJECTION_APIS = {
+            'VirtualAllocEx', 'WriteProcessMemory', 'CreateRemoteThread',
+            'CreateRemoteThreadEx', 'NtUnmapViewOfSection', 'QueueUserAPC',
+            'SetThreadContext', 'RtlCreateUserThread',
+        }
         
-        # Check for suspicious imports
-        suspicious_apis = [
-            'VirtualAlloc', 'VirtualProtect', 'WriteProcessMemory',
-            'CreateRemoteThread', 'LoadLibrary', 'GetProcAddress',
-            'WinExec', 'ShellExecute', 'RegSetValue', 'RegCreateKey',
-            'InternetOpen', 'InternetConnect', 'HttpSendRequest',
-            'CryptEncrypt', 'CryptDecrypt'
-        ]
-        
+        SHELL_APIS = {
+            'WinExec', 
+        }
+        # Network download
+        DOWNLOAD_APIS = {
+            'URLDownloadToFileA', 'URLDownloadToFileW',
+            'InternetReadFile', 'HttpSendRequestA', 'HttpSendRequestW',
+            'WinHttpSendRequest',
+        }
+
         for import_entry in self.results['imports']:
+            dll = import_entry.get('dll', '')
             for func in import_entry.get('functions', []):
-                if any(api in func for api in suspicious_apis):
-                    indicators.append(f"Suspicious API: {func} from {import_entry['dll']}")
-        
-        # Check for high entropy sections
+                fn = func.split('@')[0]
+                if fn in INJECTION_APIS:
+                    indicators.append(f"Process injection API: {fn} ({dll})")
+                elif fn in SHELL_APIS:
+                    indicators.append(f"Shell execution API: {fn} ({dll})")
+                elif fn in DOWNLOAD_APIS:
+                    indicators.append(f"Network download API: {fn} ({dll})")
+
+        # Packed / high-entropy sections
         for section in self.results['sections']:
-            if section.get('entropy', 0) > 7.0:
-                indicators.append(f"High entropy section: {section['name']} (entropy: {section['entropy']})")
-        
-        # Check for suspicious strings
-        suspicious_strings = [
-            'cmd.exe', 'powershell', 'regedit', 'netsh',
-            'taskkill', 'schtasks', 'vssadmin', 'bcdedit',
-            'http://', 'https://', '.dll', '.exe'
+            if section.get('entropy', 0) >= 7.5:
+                indicators.append(
+                    f"Packed section: {section['name']} "
+                    f"(entropy {section['entropy']:.2f})"
+                )
+
+        # Command-execution strings (focused, low false-positive rate)
+        CMD_PATTERNS = [
+            'powershell -e', 'powershell -enc', 'powershell -w hidden',
+            'cmd /c ', 'cmd.exe /c', 'cmd /k ',
+            'vssadmin delete', 'bcdedit /set', 'wmic process',
+            'regsvr32 /s', 'certutil -decode', 'bitsadmin /transfer',
+            'mshta ', 'cscript /nologo', 'wscript /e',
+            'rundll32 javascript', 'taskkill /f',
         ]
-        
-        all_strings = self.results['strings']['ascii'] + self.results['strings']['unicode']
-        for string in all_strings:
-            string_lower = string.lower()
-            for suspicious in suspicious_strings:
-                if suspicious in string_lower:
-                    indicators.append(f"Suspicious string: {string[:100]}")
+        seen_strings = set()
+        all_strings = (self.results['strings'].get('ascii', []) +
+                       self.results['strings'].get('unicode', []))
+        for s in all_strings:
+            sl = s.lower()
+            for pat in CMD_PATTERNS:
+                if pat in sl and s[:80] not in seen_strings:
+                    indicators.append(f"Command execution string: {s[:80]}")
+                    seen_strings.add(s[:80])
                     break
-        
-        # Remove duplicates and limit
-        self.results['suspicious_indicators'] = list(set(indicators))[:50]
-    
+
+        # Remove duplicates and cap
+        self.results['suspicious_indicators'] = list(dict.fromkeys(indicators))[:50]
+
     def _calculate_risk_score(self):
-        """Calculate overall risk score (0-100)"""
+        """
+        Risk score 0-100.
+        Clean executables: 0-20. Security tools: 10-30.
+        Suspicious files: 35-60. Clear malware: 65-100.
+        YARA is the primary signal. Only extreme entropy (>=7.2) is penalised.
+        """
         score = 0
-        
-        # High entropy adds risk
-        overall_entropy = self.results['entropy'].get('overall', 0)
-        if overall_entropy > 7.5:
-            score += 30
-        elif overall_entropy > 7.0:
-            score += 20
-        elif overall_entropy > 6.0:
-            score += 10
 
+        # YARA matches
+        yara_pts = 0
         for match in self.results.get('yara', {}).get('rules', []):
-            severity = match.get('meta', {}).get('severity', 'low')
-
-            if severity == 'high':
-                score += 40
-            elif severity == 'medium':
-                score += 25
+            sev = match.get('meta', {}).get('severity', 'low')
+            if sev == 'high':
+                yara_pts += 30
+            elif sev == 'medium':
+                yara_pts += 15
             else:
-                score += 10
-        
-        # Suspicious indicators add risk
-        indicator_count = len(self.results['suspicious_indicators'])
-        score += min(indicator_count * 2, 40)
-        
-        # High number of imports can indicate complexity
-        import_count = len(self.results['imports'])
-        if import_count > 20:
-            score += 10
-        
-        # Packed sections add risk
-        packed_sections = sum(1 for s in self.results['sections'] if s.get('entropy', 0) > 7.0)
-        score += packed_sections * 5
-        
-        # Cap at 100
+                yara_pts += 5
+        score += min(yara_pts, 60)
+
+        # Entropy 
+        entropy = self.results['entropy'].get('overall', 0)
+        if entropy >= 7.8:
+            score += 6
+        elif entropy >= 7.5:
+            score += 2
+
+        # High-entropy sections
+        packed = sum(
+            1 for s in self.results['sections']
+            if s.get('entropy', 0) >= 7.5
+        )
+        score += min(packed * 3, 6)
+
+        # Tiered API indicators
+        inds = self.results.get('suspicious_indicators', [])
+        inj_count   = sum(1 for i in inds if i.startswith('Process injection'))
+        shell_count = sum(1 for i in inds if i.startswith('Shell execution'))
+        net_count   = sum(1 for i in inds if i.startswith('Network download'))
+        api_pts = inj_count * 4 + shell_count * 2 + net_count * 1
+        score += min(api_pts, 15)
+
+        #Command-execution strings
+        cmd_count = sum(1 for i in inds if i.startswith('Command execution'))
+        score += min(cmd_count * 3, 5)
+
+        #Tampered / untrusted Authenticode signature
+        sig_status = self.results.get('signature', {}).get('status', 'NotSigned')
+        if sig_status in ('HashMismatch', 'NotTrusted'):
+            score += 20
+
         self.results['risk_score'] = min(score, 100)
 
 

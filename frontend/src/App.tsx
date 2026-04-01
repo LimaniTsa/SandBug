@@ -7,18 +7,28 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Results from './pages/Results';
+import History from './pages/History';
 import { logout } from './services/api';
 import './styles/globals.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
+  const [darkMode, setDarkMode] = useState(() => {
+    const stored = localStorage.getItem('theme');
+    return stored ? stored === 'dark' : true;
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
   useEffect(() => {
     //check if user is logged in on app load
     const token = localStorage.getItem('access_token');
     const user = localStorage.getItem('user');
-    
+
     if (token && user) {
       setIsAuthenticated(true);
       const userData = JSON.parse(user);
@@ -40,21 +50,24 @@ function App() {
   return (
     <Router>
       <div className="app">
-        <Header 
-          isAuthenticated={isAuthenticated} 
+        <Header
+          isAuthenticated={isAuthenticated}
           userEmail={userEmail}
           onLogout={handleLogout}
+          darkMode={darkMode}
+          onToggleDarkMode={() => setDarkMode(prev => !prev)}
         />
         <main className="main-content">
           <Routes>
-            <Route 
-              path="/" 
+            <Route
+              path="/"
               element={
-                <Landing 
-                  isAuthenticated={isAuthenticated} 
-                  userEmail={userEmail} 
+                <Landing
+                  isAuthenticated={isAuthenticated}
+                  userEmail={userEmail}
+                  darkMode={darkMode}
                 />
-              } 
+              }
             />
             <Route 
               path="/login" 
@@ -74,16 +87,9 @@ function App() {
               } 
             />
             <Route path="/results/:id" element={<Results />} />
-            <Route 
-              path="/history" 
-              element={
-                <div style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-                  <h1>Analysis History</h1>
-                  <p style={{ color: 'var(--text-secondary)' }}>
-                    History functionality coming in Sprint 11!
-                  </p>
-                </div>
-              } 
+            <Route
+              path="/history"
+              element={<History isAuthenticated={isAuthenticated} />}
             />
           </Routes>
         </main>

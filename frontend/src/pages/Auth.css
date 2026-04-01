@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   padding: 6rem 2rem 4rem;
-  padding-top: 7rem; 
+  padding-top: 7rem;
   background: linear-gradient(135deg, var(--background) 0%, var(--surface-light) 100%);
 }
 
@@ -61,6 +61,30 @@ gap: 0.5rem;
 font-weight: 500;
 color: var(--text-primary);
 font-size: 0.95rem;
+}
+.input-wrapper {
+position: relative;
+display: flex;
+align-items: center;
+}
+.input-wrapper input {
+width: 100%;
+padding-right: 2.75rem;
+}
+.toggle-password {
+position: absolute;
+right: 0.75rem;
+background: none;
+border: none;
+cursor: pointer;
+color: var(--text-muted);
+display: flex;
+align-items: center;
+padding: 0;
+transition: color 0.2s ease;
+}
+.toggle-password:hover {
+color: var(--text-primary);
 }
 .form-group input {
 padding: 0.875rem 1rem;
@@ -147,7 +171,82 @@ color: var(--primary-dark);
 text-decoration: underline;
 }
 
-/* Responsive Design */
+.login-warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.5);
+  color: #92400e;
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.login-lockout-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: rgba(239, 68, 68, 0.07);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #991b1b;
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.login-lockout-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.login-lockout-banner > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.login-lockout-banner strong {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.login-lockout-banner span {
+  opacity: 0.85;
+}
+
+.login-countdown {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  opacity: 1 !important;
+  color: #dc2626;
+}
+
+.form-group input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--surface-light, #f3f4f6);
+}
+
+[data-theme="dark"] .login-warning-banner {
+  background: rgba(234, 179, 8, 0.1);
+  border-color: rgba(234, 179, 8, 0.35);
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .login-lockout-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .login-countdown {
+  color: #f87171;
+}
+
 @media (max-width: 640px) {
   .auth-card {
   padding: 2rem 1.5rem;

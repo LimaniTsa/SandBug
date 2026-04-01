@@ -10,5 +10,5 @@ rule Suspicious_PowerShell_Download
         $http = "http://" nocase
 
     condition:
-        2 of them
+        all of them
 }

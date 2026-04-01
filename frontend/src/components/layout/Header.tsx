@@ -1,15 +1,17 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Bug, LogOut, User, Home } from 'lucide-react';
+import { Bug, LogOut, User, Sun, Moon } from 'lucide-react';
 import './Header.css';
 
 interface HeaderProps {
   isAuthenticated: boolean;
   userEmail?: string;
   onLogout: () => void;
+  darkMode: boolean;
+  onToggleDarkMode: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isAuthenticated, userEmail }) => {
+const Header: React.FC<HeaderProps> = ({ isAuthenticated, userEmail, darkMode, onToggleDarkMode }) => {
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
@@ -48,10 +50,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, userEmail }) => {
         </Link>
 
         <nav className="nav">
-          <Link to="/" className="nav-link">
-            <Home size={18} />
-            Home
-          </Link>
+          <Link to="/" className="nav-link">Home</Link>
 
           {isAuthenticated ? (
             <>
@@ -77,9 +76,17 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, userEmail }) => {
           ) : (
             <>
               <Link to="/login" className="nav-link">Login</Link>
-              <Link to="/register" className="nav-link-primary">Get Started</Link>
+              <Link to="/register" className="nav-link-primary">Create Account</Link>
             </>
           )}
+
+          <button
+            className="dark-mode-toggle"
+            onClick={onToggleDarkMode}
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
         </nav>
 
       </div>

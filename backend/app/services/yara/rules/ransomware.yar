@@ -10,5 +10,5 @@ rule Ransomware_Indicators
         $c = ".encrypted" nocase
 
     condition:
-        any of them
+        $a or ($b and $c)
 }

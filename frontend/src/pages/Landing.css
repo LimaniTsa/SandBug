@@ -25,6 +25,11 @@
   pointer-events: none;
 }
 
+.hero-liquid-interactive {
+  opacity: 0.95;
+  pointer-events: all;
+}
+
 
 .hero::after {
   content: "";
@@ -99,47 +104,39 @@
 }
 
 .btn-primary {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.55);
-  color: #78009c;
+  background: transparent;
+  color: #fff;
   padding: 1rem 2.5rem;
   border-radius: 0.8rem;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-
-  box-shadow: 0 8px 25px rgba(140, 50, 255, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .btn-primary:hover {
+  background: rgba(176, 111, 216, 0.15);
+  border-color: #b06fd8;
   transform: translateY(-3px);
-  box-shadow: 0 12px 35px rgba(140, 50, 255, 0.55);
 }
 
-
-/* Secondary Button — Glass Frosted White */
 .btn-secondary {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.55);
-  color: #78009c;
+  background: transparent;
+  color: #fff;
   padding: 1rem 2.5rem;
   border-radius: 0.8rem;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(176, 111, 216, 0.1);
+  border-color: #b06fd8;
   transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(255, 255, 255, 0.35);
 }
 
 .features {
@@ -298,4 +295,35 @@
   .steps {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Dark mode overrides ───────────────────────────────────────── */
+[data-theme="dark"] .hero::after {
+  background: none;
+}
+
+[data-theme="dark"] .hero-subtitle {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+[data-theme="dark"] .features {
+  background: linear-gradient(to bottom right, #0f0f13 0%, #16101f 100%);
+}
+
+[data-theme="dark"] .how-it-works {
+  background: #160d22;
+}
+
+[data-theme="dark"] .section-title {
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .section-subtitle {
+  color: #c4c8d4;
+}
+
+[data-theme="dark"] .step {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }

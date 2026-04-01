@@ -1,0 +1,18 @@
+Collecting redis
+  Downloading redis-7.4.0-py3-none-any.whl.metadata (12 kB)
+Collecting rq
+  Downloading rq-2.7.0-py3-none-any.whl.metadata (10 kB)
+Requirement already satisfied: click>=5 in .\venv\Lib\site-packages (from rq) (8.3.1)
+Collecting croniter (from rq)
+  Downloading croniter-6.2.2-py3-none-any.whl.metadata (22 kB)
+Requirement already satisfied: colorama in .\venv\Lib\site-packages (from click>=5->rq) (0.4.6)
+Collecting python-dateutil (from croniter->rq)
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Requirement already satisfied: six>=1.5 in .\venv\Lib\site-packages (from python-dateutil->croniter->rq) (1.17.0)
+Downloading redis-7.4.0-py3-none-any.whl (409 kB)
+Downloading rq-2.7.0-py3-none-any.whl (115 kB)
+Downloading croniter-6.2.2-py3-none-any.whl (45 kB)
+Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Installing collected packages: redis, python-dateutil, croniter, rq
+
+Successfully installed croniter-6.2.2 python-dateutil-2.9.0.post0 redis-7.4.0 rq-2.7.0

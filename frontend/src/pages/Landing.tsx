@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileSearch, Activity, Brain, Shield, History, Download } from 'lucide-react';
+import { FileSearch, Activity, Brain, Shield, History, Download, Globe } from 'lucide-react';
 
 import FeatureCard from '../components/common/FeatureCard';
 import { getFeatures } from '../services/api';
@@ -8,6 +8,7 @@ import { Feature } from '../types';
 
 import './Landing.css';
 import Iridescence from '../components/common/Iridescence';
+import LiquidEther from '../components/common/LiquidEther';
 
 const iconMap: { [key: string]: any } = {
   FileSearch,
@@ -16,14 +17,16 @@ const iconMap: { [key: string]: any } = {
   Shield,
   History,
   Download,
+  Globe,
 };
 
 interface LandingProps {
   isAuthenticated: boolean;
   userEmail?: string;
+  darkMode?: boolean;
 }
 
-const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail }) => {
+const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail, darkMode }) => {
   const navigate = useNavigate();
 
   const [features, setFeatures] = useState<Feature[]>([]);
@@ -54,23 +57,47 @@ const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail }) => {
   return (
     <div className="landing">
       <section className="hero">
-        <Iridescence
-          className="hero-liquid-bg"
-          color={[0.7, 0.3, 1.0]}
-          speed={0.6}
-          amplitude={0.22}
-          mouseReact={true}
-        />
+        {darkMode ? (
+          <LiquidEther
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }}
+            colors={['#5227FF', '#FF9FFC', '#B19EEF']}
+            mouseForce={20}
+            cursorSize={100}
+            isViscous
+            viscous={26}
+            iterationsViscous={32}
+            iterationsPoisson={32}
+            resolution={0.5}
+            isBounce = {false}
+            autoDemo
+            autoSpeed={0.5}
+            autoIntensity={2.2}
+            takeoverDuration={0.25}
+            autoResumeDelay={3000}
+            autoRampDuration={0.6}
+            color0="#5227FF"
+            color1="#FF9FFC"
+            color2="#B19EEF"
+          />
+        ) : (
+          <Iridescence
+            className="hero-liquid-bg"
+            color={[0.7, 0.3, 1.0]}
+            speed={0.6}
+            amplitude={0.22}
+            mouseReact={true}
+          />
+        )}
 
         <div className="hero-content">
           {isAuthenticated ? (
             <>
               <h1 className="hero-title">
-                Hello, <span className="gradient-text">{getUserName()}</span>
+                Welcome back, <span className="gradient-text">{getUserName()}</span>
               </h1>
 
               <p className="hero-subtitle">
-                Ready to analyse suspicious files? Access your dashboard or review your previous analyses.
+                Submit a file or URL for analysis, or review your previous threat reports.
               </p>
 
               <div className="hero-actions">
@@ -85,16 +112,16 @@ const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail }) => {
           ) : (
             <>
               <h1 className="hero-title">
-                SandBug: Malware Analysis <span className="gradient-text">Made Simple</span>
+                Analyse <span className="gradient-text">Files & URLs</span>
               </h1>
 
               <p className="hero-subtitle">
-                SandBug lets you safely analyse suspicious files with just one click in a secure, isolated environment.
+                Upload suspicious files or scan URLs for malware, IP grabbers, and threats. Static signatures, dynamic sandboxing, and AI-generated summaries. No setup required.
               </p>
 
               <div className="hero-actions">
                 <button onClick={() => navigate('/dashboard')} className="btn-primary">
-                  Continue as Guest
+                  Start Scanning
                 </button>
                 <button onClick={() => navigate('/register')} className="btn-secondary">
                   Create Account
@@ -142,20 +169,20 @@ const Landing: React.FC<LandingProps> = ({ isAuthenticated, userEmail }) => {
           <div className="steps">
             <div className="step">
               <div className="step-number">1</div>
-              <h3>Upload File</h3>
-              <p>Drop your suspicious file or select it from your computer.</p>
+              <h3>Submit a File or URL</h3>
+              <p>Upload a suspicious file or paste a URL. Executables, scripts, documents, and links are all supported.</p>
             </div>
 
             <div className="step">
               <div className="step-number">2</div>
-              <h3>Automated Analysis</h3>
-              <p>The system performs both static and dynamic analysis.</p>
+              <h3>Multi-Layer Analysis</h3>
+              <p>YARA signature matching, entropy analysis, dynamic sandboxing, heuristic checks, and IP reputation lookups run automatically.</p>
             </div>
 
             <div className="step">
               <div className="step-number">3</div>
-              <h3>Get Results</h3>
-              <p>Receive AI-powered reports with actionable insights.</p>
+              <h3>AI Threat Report</h3>
+              <p>Get a risk score, indicators of compromise, redirect chains, and a plain-English AI summary you can export as a PDF report.</p>
             </div>
           </div>
         </div>

@@ -3,6 +3,8 @@ from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_bcrypt import Bcrypt
+from redis import Redis
+from rq import Queue
 
 from app.config import Config
 from app.models import db
@@ -10,6 +12,7 @@ from app.models import db
 migrate = Migrate()
 jwt = JWTManager()
 bcrypt = Bcrypt()
+rq_queue: Queue = None 
 
 def create_app():
     #application factory pattern
@@ -40,5 +43,11 @@ def create_app():
     #create upload folder
     import os
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    
+
+    # initialise RQ queue
+    global rq_queue
+    redis_conn = Redis.from_url(app.config['REDIS_URL'])
+    rq_queue = Queue(connection=redis_conn)
+    app.rq_queue = rq_queue
+
     return app

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle, AlertTriangle, ShieldOff } from 'lucide-react';
 import { login } from '../services/api';
 import './Auth.css';
 
@@ -9,41 +9,67 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const navigate  = useNavigate();
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error,    setError]    = useState('');
+  const [warning,  setWarning]  = useState('');
+  const [locked,   setLocked]   = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [loading,  setLoading]  = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Countdown ticker when locked
+  useEffect(() => {
+    if (locked && countdown > 0) {
+      timerRef.current = setInterval(() => {
+        setCountdown(s => {
+          if (s <= 1) {
+            clearInterval(timerRef.current!);
+            setLocked(false);
+            setError('');
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [locked, countdown]);
+
+  const fmtCountdown = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-    setError(''); //clear error when user types
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (!locked) { setError(''); setWarning(''); }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (locked) return;
     setError('');
+    setWarning('');
     setLoading(true);
 
     try {
       const response = await login(formData.email, formData.password);
-      
-      //store token and user data
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      
-      //call parent callback
       onLoginSuccess(response.user.email);
-      
-      //redirect to dashboard
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed. Please try again.');
+      const data = err.response?.data ?? {};
+      if (data.locked) {
+        setLocked(true);
+        setCountdown(data.retry_after ?? 900);
+        setError(data.error || 'Too many failed attempts. Account temporarily locked.');
+      } else {
+        setError(data.error || 'Login failed. Please try again.');
+        if (data.warning) setWarning(data.warning);
+      }
     } finally {
       setLoading(false);
     }
@@ -57,10 +83,30 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           <p>Sign in to your SandBug account</p>
         </div>
 
-        {error && (
+        {locked && (
+          <div className="login-lockout-banner">
+            <ShieldOff size={18} />
+            <div>
+              <strong>Account temporarily locked</strong>
+              <span>{error}</span>
+              {countdown > 0 && (
+                <span className="login-countdown">Unlocks in {fmtCountdown(countdown)}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {error && !locked && (
           <div className="error-banner">
-            <AlertCircle size={20} />
+            <AlertCircle size={18} />
             <span>{error}</span>
+          </div>
+        )}
+
+        {warning && !locked && (
+          <div className="login-warning-banner">
+            <AlertTriangle size={18} />
+            <span>{warning}</span>
           </div>
         )}
 
@@ -79,6 +125,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               placeholder="you@example.com"
               required
               autoComplete="email"
+              disabled={locked}
             />
           </div>
 
@@ -96,26 +143,25 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               placeholder="Enter your password"
               required
               autoComplete="current-password"
+              disabled={locked}
             />
           </div>
 
-          <button type="submit" className="btn-auth" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
+          <button type="submit" className="btn-auth" disabled={loading || locked}>
+            {locked
+              ? `Locked — ${fmtCountdown(countdown)}`
+              : loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
             Don't have an account?{' '}
-            <Link to="/register" className="auth-link">
-              Create one
-            </Link>
+            <Link to="/register" className="auth-link">Create one</Link>
           </p>
           <p>
             Or{' '}
-            <Link to="/dashboard" className="auth-link">
-              continue as guest
-            </Link>
+            <Link to="/dashboard" className="auth-link">continue as guest</Link>
           </p>
         </div>
       </div>

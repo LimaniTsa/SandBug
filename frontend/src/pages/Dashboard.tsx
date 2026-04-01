@@ -36,7 +36,12 @@ const Dashboard: React.FC<DashboardProps> = ({ isAuthenticated }) => {
   const [urlStatus, setUrlStatus]       = useState<UrlStatus>({ status: 'idle' });
 
   const MAX_FILE_SIZE      = 200 * 1024 * 1024;
-  const ALLOWED_EXTENSIONS = ['exe', 'dll', 'pdf', 'doc', 'docx'];
+  const ALLOWED_EXTENSIONS = [
+    'exe', 'dll', 'sys', 'scr', 'com', 'drv', 'ocx', 'cpl',
+    'js', 'vbs', 'vbe', 'ps1', 'psm1', 'bat', 'cmd', 'hta', 'wsf', 'wsh',
+    'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', 'rtf',
+    'elf', 'so', 'apk', 'jar', 'lnk', 'iso', 'msi', 'cab', 'zip',
+  ];
 
   //File
 
@@ -155,7 +160,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isAuthenticated }) => {
                     accept={ALLOWED_EXTENSIONS.map(e => `.${e}`).join(',')} style={{ display: 'none' }} />
                   <p className="upload-info">
                     Maximum file size: 200MB<br />
-                    Supported formats: {ALLOWED_EXTENSIONS.join(', ')}
+                    Executables, scripts, documents, archives &amp; more
                   </p>
                 </>
               ) : (

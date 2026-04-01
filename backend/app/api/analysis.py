@@ -6,8 +6,66 @@ from werkzeug.utils import secure_filename
 import os
 import hashlib
 import magic
+import zipfile
+import tempfile
 from datetime import datetime, timezone
 from app.services.ai_summarizer import summarise_url
+
+# Extensions we will analyse inside a zip
+_ANALYSABLE = {
+    'exe', 'dll', 'sys', 'scr', 'com', 'drv', 'ocx', 'cpl',
+    'js', 'vbs', 'vbe', 'ps1', 'psm1', 'bat', 'cmd', 'hta', 'wsf', 'wsh',
+    'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', 'rtf',
+    'elf', 'so', 'apk', 'jar', 'lnk', 'iso', 'msi', 'cab',
+}
+# MalwareBazaar (and most malware zips) use this password
+_ZIP_PASSWORDS = [b'infected', b'malware', b'virus', b'']
+
+
+def _extract_zip(zip_bytes: bytes) -> tuple[bytes, str] | None:
+    """
+    Extract the first analysable file from a zip.
+    Tries common malware-zip passwords automatically.
+    Returns (file_bytes, filename) or None if nothing suitable found.
+    Guards against zip-slip path traversal.
+    """
+    with tempfile.TemporaryDirectory() as extract_dir:
+        zip_tmp = os.path.join(extract_dir, 'upload.zip')
+        with open(zip_tmp, 'wb') as f:
+            f.write(zip_bytes)
+
+        for pwd in _ZIP_PASSWORDS:
+            try:
+                with zipfile.ZipFile(zip_tmp) as zf:
+                    names = zf.namelist()
+                    # Zip-slip guard
+                    real_dir = os.path.realpath(extract_dir)
+                    for name in names:
+                        dest = os.path.realpath(os.path.join(extract_dir, name))
+                        if not dest.startswith(real_dir + os.sep):
+                            raise ValueError('Zip slip detected')
+
+                    # Find first file with an analysable extension
+                    target = next(
+                        (n for n in names
+                         if not n.endswith('/')
+                         and os.path.splitext(n)[1].lstrip('.').lower() in _ANALYSABLE),
+                        None
+                    )
+                    if target is None:
+                        return None
+
+                    zf.extract(target, extract_dir, pwd=pwd or None)
+                    extracted_path = os.path.join(extract_dir, target)
+                    with open(extracted_path, 'rb') as ef:
+                        return ef.read(), os.path.basename(target)
+            except (RuntimeError, zipfile.BadZipFile):
+                # Wrong password or bad zip — try next
+                continue
+            except ValueError:
+                raise  # zip-slip — propagate
+
+    return None
 
 
 def allowed_file(filename):
@@ -120,14 +178,21 @@ def upload_file():
         from app.services import storage
 
         original_filename = secure_filename(file.filename)
+        file_bytes = file.read()
+
+        # If the upload is a zip, extract the first analysable file from it
+        if original_filename.lower().endswith('.zip'):
+            result = _extract_zip(file_bytes)
+            if result is None:
+                return jsonify({'error': 'No analysable file found inside the zip (supported: exe, dll, pdf, doc, docx)'}), 400
+            file_bytes, original_filename = result
+
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         unique_filename = f"{timestamp}_{original_filename}"
 
-        file_bytes = file.read()
         file_size  = len(file_bytes)
 
         # Write to a temp file for hashing and type detection before storage.
-        import tempfile
         with tempfile.NamedTemporaryFile(
             suffix=os.path.splitext(original_filename)[1] or '.bin',
             delete=False,

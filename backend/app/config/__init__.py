@@ -29,7 +29,18 @@ class Config:
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or \
         os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
     MAX_CONTENT_LENGTH = 200 * 1024 * 1024
-    ALLOWED_EXTENSIONS = {'exe', 'dll', 'pdf', 'doc', 'docx'}
+    ALLOWED_EXTENSIONS = {
+        # PE / Windows
+        'exe', 'dll', 'sys', 'scr', 'com', 'drv', 'ocx', 'cpl',
+        # Scripts
+        'js', 'vbs', 'vbe', 'ps1', 'psm1', 'bat', 'cmd', 'hta', 'wsf', 'wsh',
+        # Documents
+        'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', 'rtf',
+        # Linux / other
+        'elf', 'so', 'apk', 'jar', 'lnk', 'iso', 'msi', 'cab',
+        # Archives (extracted server-side)
+        'zip',
+    }
 
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
 

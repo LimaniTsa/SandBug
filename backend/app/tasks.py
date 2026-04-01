@@ -47,12 +47,18 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
                     f_static  = executor.submit(_run_static)
                     f_dynamic = executor.submit(_run_dynamic)
 
+                    # Update status as soon as static finishes — dynamic still running in background
                     try:
                         static_raw = f_static.result()
+                        record.status = 'static_complete'
+                        db.session.commit()
                     except Exception as exc:
                         static_raw = {}
                         record.error_message = f'Static analysis failed: {exc}'
+                        record.status = 'static_failed'
+                        db.session.commit()
 
+                    # Now wait for dynamic to complete
                     try:
                         dynamic_raw = f_dynamic.result()
                     except Exception as exc:

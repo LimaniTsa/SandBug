@@ -11,7 +11,8 @@ const Results: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const analysisId = parseInt(id || '0');
 
-  const { status, stage, analysis, isComplete, error } = useAnalysisPoller(analysisId);
+  const { status, stage, analysis, isComplete, isFailed, error } = useAnalysisPoller(analysisId);
+  const awaitingSummary = isComplete && !isFailed && !analysis?.ai_summary;
 
   const handleDownload = async (format: ReportFormat) => {
     if (analysis) return downloadReport(analysis, format);
@@ -28,14 +29,14 @@ const Results: React.FC = () => {
     );
   }
 
-  if (!isComplete) {
+  if (!isComplete || awaitingSummary) {
     return (
       <div className="results-page">
         <AnalysisProgress
           status={status}
-          label={stage.label}
-          sub={stage.sub}
-          progress={stage.progress}
+          label={awaitingSummary ? 'Generating AI summary…' : stage.label}
+          sub={awaitingSummary ? 'Almost done — writing threat report.' : stage.sub}
+          progress={awaitingSummary ? 95 : stage.progress}
           filename={analysis?.filename}
         />
       </div>

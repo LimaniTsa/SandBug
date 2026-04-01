@@ -69,11 +69,16 @@ export interface PollerResult {
   error:      string | null;
 }
 
+// After reaching a terminal status, poll a few more times waiting for ai_summary
+const AI_SUMMARY_RETRIES = 5;
+const AI_SUMMARY_INTERVAL_MS = 3000;
+
 export function useAnalysisPoller(analysisId: number): PollerResult {
   const [status,   setStatus]   = useState('processing');
   const [analysis, setAnalysis] = useState<Record<string, any> | null>(null);
   const [error,    setError]    = useState<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const summaryTriesRef = useRef(0);
 
   const poll = useCallback(async () => {
     try {
@@ -92,9 +97,13 @@ export function useAnalysisPoller(analysisId: number): PollerResult {
       setAnalysis(a);
       setError(null);
 
-      // Keep polling until a terminal status is reached
       if (!TERMINAL_STATUSES.has(a.status)) {
+        // Keep polling until a terminal status is reached
         timerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
+      } else if (!a.ai_summary && summaryTriesRef.current < AI_SUMMARY_RETRIES) {
+        // Terminal but no AI summary yet — keep polling briefly for it
+        summaryTriesRef.current += 1;
+        timerRef.current = setTimeout(poll, AI_SUMMARY_INTERVAL_MS);
       }
     } catch (err: any) {
       const msg = err.response?.data?.error ?? 'Failed to fetch analysis status.';

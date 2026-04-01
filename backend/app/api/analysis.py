@@ -24,10 +24,11 @@ _ZIP_PASSWORDS = [b'infected', b'malware', b'virus', b'']
 
 def _extract_zip(zip_bytes: bytes) -> tuple[bytes, str] | None:
     """
-    Extract the first analysable file from a zip.
+    Extract the best analysable file from a zip.
     Tries common malware-zip passwords automatically.
-    Returns (file_bytes, filename) or None if nothing suitable found.
+    Prefers files with known extensions; falls back to the largest file.
     Guards against zip-slip path traversal.
+    Returns (file_bytes, filename) or None on failure.
     """
     with tempfile.TemporaryDirectory() as extract_dir:
         zip_tmp = os.path.join(extract_dir, 'upload.zip')
@@ -37,31 +38,38 @@ def _extract_zip(zip_bytes: bytes) -> tuple[bytes, str] | None:
         for pwd in _ZIP_PASSWORDS:
             try:
                 with zipfile.ZipFile(zip_tmp) as zf:
-                    names = zf.namelist()
                     # Zip-slip guard
                     real_dir = os.path.realpath(extract_dir)
-                    for name in names:
-                        dest = os.path.realpath(os.path.join(extract_dir, name))
+                    infos = [i for i in zf.infolist() if not i.filename.endswith('/')]
+                    for info in infos:
+                        dest = os.path.realpath(os.path.join(extract_dir, info.filename))
                         if not dest.startswith(real_dir + os.sep):
                             raise ValueError('Zip slip detected')
 
-                    # Find first file with an analysable extension
-                    target = next(
-                        (n for n in names
-                         if not n.endswith('/')
-                         and os.path.splitext(n)[1].lstrip('.').lower() in _ANALYSABLE),
-                        None
-                    )
-                    if target is None:
+                    if not infos:
                         return None
 
+                    # Prefer a file with a known extension, else take the largest file
+                    target = next(
+                        (i for i in infos
+                         if os.path.splitext(i.filename)[1].lstrip('.').lower() in _ANALYSABLE),
+                        None
+                    ) or max(infos, key=lambda i: i.file_size)
+
                     zf.extract(target, extract_dir, pwd=pwd or None)
-                    extracted_path = os.path.join(extract_dir, target)
+                    extracted_path = os.path.join(extract_dir, target.filename)
                     with open(extracted_path, 'rb') as ef:
-                        return ef.read(), os.path.basename(target)
-            except (RuntimeError, zipfile.BadZipFile):
-                # Wrong password or bad zip — try next
+                        data = ef.read()
+
+                    # Use original filename if it has an extension, else keep as-is
+                    name = os.path.basename(target.filename)
+                    return data, name
+
+            except RuntimeError:
+                # Wrong password — try next
                 continue
+            except zipfile.BadZipFile:
+                return None
             except ValueError:
                 raise  # zip-slip — propagate
 
@@ -184,7 +192,7 @@ def upload_file():
         if original_filename.lower().endswith('.zip'):
             result = _extract_zip(file_bytes)
             if result is None:
-                return jsonify({'error': 'No analysable file found inside the zip (supported: exe, dll, pdf, doc, docx)'}), 400
+                return jsonify({'error': 'Could not extract a file from the zip. It may be corrupted or use an unsupported format.'}), 400
             file_bytes, original_filename = result
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

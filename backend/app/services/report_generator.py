@@ -116,31 +116,53 @@ class ReportPDF(FPDF):
         self.add_page()
 
     def set_font(self, family='', style='', size=0):
-        """Transparently substitute Calibri for Helvetica when available."""
-        if family and family.lower() == 'helvetica' and self._body_font == 'Calibri':
-            family = 'Calibri'
+        """Substitute loaded body font for Helvetica when a Unicode font is available."""
+        if family and family.lower() == 'helvetica' and self._body_font in ('Calibri', 'DejaVu'):
+            family = self._body_font
         super().set_font(family, style, size)
 
     def _load_calibri(self):
         global _CALIBRI_LOADED
         import os
-        fonts_dir = r'C:\Windows\Fonts'
-        files = {
+
+        # Try Calibri on Windows
+        calibri_dir = r'C:\Windows\Fonts'
+        calibri_files = {
             '':  'calibri.ttf',
             'B': 'calibrib.ttf',
             'I': 'calibrii.ttf',
             'BI':'calibriz.ttf',
         }
         try:
-            for style, fname in files.items():
-                path = os.path.join(fonts_dir, fname)
+            for style, fname in calibri_files.items():
+                path = os.path.join(calibri_dir, fname)
                 if not os.path.exists(path):
-                    return  # any missing file → skip Calibri entirely
+                    raise FileNotFoundError
                 self.add_font('Calibri', style, path)
             self._body_font = 'Calibri'
             _CALIBRI_LOADED = True
+            return
         except Exception:
-            pass  # fall back to Helvetica silently
+            pass
+
+        # Try DejaVu on Linux (supports Unicode)
+        dejavu_dir = '/usr/share/fonts/truetype/dejavu'
+        dejavu_files = {
+            '':  'DejaVuSans.ttf',
+            'B': 'DejaVuSans-Bold.ttf',
+            'I': 'DejaVuSans-Oblique.ttf',
+            'BI':'DejaVuSans-BoldOblique.ttf',
+        }
+        try:
+            for style, fname in dejavu_files.items():
+                path = os.path.join(dejavu_dir, fname)
+                if not os.path.exists(path):
+                    raise FileNotFoundError
+                self.add_font('DejaVu', style, path)
+            self._body_font = 'DejaVu'
+            return
+        except Exception:
+            pass  # fall back to Helvetica with sanitized text
 
     def _font(self, style='', size=10):
         """Set body font (Calibri if available, else Helvetica)."""

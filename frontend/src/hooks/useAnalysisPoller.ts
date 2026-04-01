@@ -21,12 +21,12 @@ const STATUS_MAP: Record<string, StageInfo> = {
   },
   static_complete: {
     label: 'Static analysis complete',
-    sub:   'Submitting to sandboxes — usually under 3 minutes…',
+    sub:   'Submitting to sandbox - usually under 3 minutes…',
     progress: 30,
   },
   static_failed: {
     label: 'Static analysis failed',
-    sub:   'Running sandboxes anyway…',
+    sub:   'Running sandbox anyway…',
     progress: 25,
   },
   dynamic_queued: {

@@ -1,13 +1,3 @@
-/**
- * AnalysisProgress.tsx
- *
- * Shown on the Results page while analysis is still running.
- * Replaces the blank loading state with a live progress bar,
- * stage label, and animated indicators.
- *
- * Drop into src/components/common/
- */
-
 import React from 'react';
 import { CheckCircle, AlertTriangle, Clock, Activity } from 'lucide-react';
 import './AnalysisProgress.css';
@@ -20,7 +10,7 @@ interface AnalysisProgressProps {
   filename?: string;
 }
 
-// ── Stage timeline ────────────────────────────────────────────────────────────
+//Stage timeline
 
 interface Step {
   id:       string;
@@ -64,8 +54,7 @@ const stepState = (step: Step, status: string): 'done' | 'active' | 'pending' =>
   return 'pending';
 };
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
+//Component
 const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
   status,
   label,

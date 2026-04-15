@@ -128,7 +128,7 @@ class ReportPDF(FPDF):
         self.set_auto_page_break(auto=True, margin=15)
         self._title     = title
         self._generated = generated
-        self._body_font = 'Helvetica'   # fallback; updated below if Calibri loads
+        self._body_font = 'Helvetica'
         self._load_calibri()
         self.add_page()
 
@@ -241,10 +241,7 @@ class ReportPDF(FPDF):
         else:
             self._font('', 8)
         self.set_text_color(20, 20, 20)
-        val = _s(value)
-        if len(val) > 76:
-            val = val[:73] + '...'
-        self.multi_cell(138, 5.5, val, new_x='LMARGIN', new_y='NEXT')
+        self.multi_cell(138, 5.5, _s(value), new_x='LMARGIN', new_y='NEXT')
 
     def divider(self, thick=False):
         if thick:
@@ -379,7 +376,7 @@ class ReportPDF(FPDF):
         for px, py in data_pts:
             self.ellipse(px - 1.0, py - 1.0, 2.0, 2.0, style='F')
 
-        # Axis labels — wider cell so long names like "Dynamic" don't clip
+        # Axis labels
         self._font('', 5.5)
         for i, (a, label) in enumerate(zip(angles, labels)):
             lx = cx + (radius + 8) * math.cos(a)
@@ -690,7 +687,6 @@ class ReportPDF(FPDF):
 
 
 #  Visual section builders 
-
 def _write_security_checks(pdf: ReportPDF, u: dict, x_right: float, y_right: float):
     """Draw a security check status panel for URL analyses."""
     ssl        = u.get('ssl')          or {}
@@ -902,7 +898,7 @@ _STATUS_COLORS = {
 def _write_file_checks_table(pdf: ReportPDF, static_d: dict, dynamic_d: dict):
     """
     Full-width structured table showing every analysis check with a coloured
-    PASS / WARN / FAIL / INFO badge — the centrepiece of the report's first page.
+    PASS / WARN / FAIL / INFO badge - the centrepiece of the report's first page.
     """
     if not static_d:
         return
@@ -1626,8 +1622,7 @@ def build_pdf(analysis_record) -> bytes:
 
     pdf.set_font('Helvetica', 'B', 15)
     pdf.set_text_color(0, 0, 0)
-    display_title = title if len(title) <= 75 else title[:72] + '...'
-    pdf.cell(0, 8, display_title, new_x='LMARGIN', new_y='NEXT')
+    pdf.multi_cell(0, 8, title, new_x='LMARGIN', new_y='NEXT')
     pdf.ln(1)
 
     pdf.set_font('Helvetica', '', 8)
@@ -1656,7 +1651,7 @@ def build_pdf(analysis_record) -> bytes:
     pdf.set_text_color(15, 15, 15)
     if not is_url:
         h = _s(data.get('file_hash', ''))
-        pdf.cell(0, 4.5, f'File:  {_s(data.get("filename"))}',    new_x='LMARGIN', new_y='NEXT')
+        pdf.multi_cell(0, 4.5, f'File:  {_s(data.get("filename"))}', new_x='LMARGIN', new_y='NEXT')
         pdf.set_x(x0)
         pdf.cell(0, 4.5, f'Size:  {_fmt(data.get("file_size"))}',  new_x='LMARGIN', new_y='NEXT')
         pdf.set_x(x0)
@@ -1666,8 +1661,8 @@ def build_pdf(analysis_record) -> bytes:
             pdf.set_x(x0)
             pdf.cell(0, 4.5, f'        {h[32:]}',                  new_x='LMARGIN', new_y='NEXT')
     else:
-        short_url = display_title if len(display_title) <= 58 else display_title[:55] + '...'
-        pdf.cell(0, 4.5, f'URL:  {short_url}', new_x='LMARGIN', new_y='NEXT')
+        pdf.set_x(x0)
+        pdf.multi_cell(0, 4.5, f'URL:  {title}', new_x='LMARGIN', new_y='NEXT')
 
     pdf.set_font('Helvetica', '', 8)
     pdf.set_text_color(15, 15, 15)

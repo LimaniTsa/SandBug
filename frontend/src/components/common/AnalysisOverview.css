@@ -318,6 +318,56 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0,0,0,0.09);
 }
+.ov-hovertip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  cursor: help;
+  flex-shrink: 0;
+}
+.ov-hovertip-icon {
+  color: var(--text-muted, #9ca3af);
+  opacity: 0.5;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+.ov-hovertip:hover .ov-hovertip-icon {
+  opacity: 1;
+  color: var(--primary);
+}
+.ov-hovertip-bubble {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: -8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: normal;
+  width: 210px;
+  z-index: 200;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.14);
+  pointer-events: none;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ov-hovertip-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 12px;
+  border: 5px solid transparent;
+  border-top-color: var(--border);
+}
+.ov-hovertip:hover .ov-hovertip-bubble {
+  display: block;
+}
+
 .ov-stat-header {
   display: flex;
   align-items: center;

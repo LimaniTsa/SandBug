@@ -14,9 +14,7 @@ import {
 import { ReportFormat } from '../../utils/generateReport';
 import './AnalysisOverview.css';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
+//Types
 interface YaraRule { rule: string; tags?: string[]; meta?: { severity?: string; description?: string } }
 interface Section  { name: string; virtual_size?: number; raw_size?: number; entropy: number; suspicious?: string }
 interface Import   { dll: string; functions: string[] }
@@ -86,9 +84,8 @@ interface Props {
   onDownload?:  (format: ReportFormat) => Promise<void>;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
+//Helpers
+
 const RISK: Record<string,string> = { low:'#10b981', medium:'#f59e0b', high:'#f97316', critical:'#ef4444', unknown:'#9ca3af' };
 const RISK_LABEL: Record<string,string> = { low:'Low Risk', medium:'Medium Risk', high:'High Risk', critical:'Critical Risk', unknown:'Unknown' };
 const ec   = (e:number) => e > 7 ? '#ef4444' : e > 6 ? '#f97316' : '#10b981';
@@ -96,10 +93,7 @@ const sc   = (s:number) => s >= 75 ? '#ef4444' : s >= 50 ? '#f97316' : s >= 25 ?
 const sigc = (s:number) => s >= 7  ? '#ef4444' : s >= 4  ? '#f97316' : '#f59e0b';
 const fmt  = (b:number) => b < 1024 ? `${b} B` : b < 1048576 ? `${(b/1024).toFixed(1)} KB` : `${(b/1048576).toFixed(1)} MB`;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Small reusable pieces
-// ─────────────────────────────────────────────────────────────────────────────
-
+//Small reusable pieces
 const SevBadge: React.FC<{sev:string}> = ({sev}) => (
   <span className={`ov-sev ov-sev-${sev.toLowerCase()}`}>{sev.toUpperCase()}</span>
 );
@@ -117,6 +111,13 @@ const Expandable: React.FC<{label:string; count:number; accent?:string; children
     </div>
   );
 };
+
+const HoverTip: React.FC<{text: string}> = ({ text }) => (
+  <span className="ov-hovertip">
+    <Info size={12} className="ov-hovertip-icon"/>
+    <span className="ov-hovertip-bubble">{text}</span>
+  </span>
+);
 
 const TTip: React.FC<any> = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -140,10 +141,8 @@ const ImportTTip: React.FC<any> = ({ active, payload, label }) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AI Summary Card — shared by both file and URL analyses
-// ─────────────────────────────────────────────────────────────────────────────
 
+// AI Summary Card 
 const AiSummaryCard: React.FC<{summary?: string | null}> = ({ summary }) => (
   <div className="ov-card ov-ai-card">
     <div className="ov-card-header">
@@ -164,10 +163,7 @@ const AiSummaryCard: React.FC<{summary?: string | null}> = ({ summary }) => (
   </div>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// URL Results — rendered when fileType === 'URL'
-// ─────────────────────────────────────────────────────────────────────────────
-
+//URL Results
 const CheckRow: React.FC<{label: string; ok: boolean | null; detail?: string; icon?: React.ReactNode}> =
 ({ label, ok, detail, icon }) => (
   <div className="url-check-row">
@@ -320,6 +316,7 @@ const UrlResults: React.FC<{u: StaticData; riskLevel: string; url: string; aiSum
           <div className="ov-stat-header">
             <AlertTriangle size={18}/>
             <span className="ov-stat-label">Heuristic Score</span>
+            <HoverTip text="A score based on pattern matching against known phishing and malware delivery techniques. Higher values mean more suspicious URL characteristics were found." />
           </div>
           <span className="ov-stat-big" style={{color: sc(heur?.score ?? 0)}}>
             {heur?.score ?? 0}<span className="ov-stat-denom">/100</span>
@@ -359,6 +356,7 @@ const UrlResults: React.FC<{u: StaticData; riskLevel: string; url: string; aiSum
           <div className="ov-stat-header">
             <Network size={18}/>
             <span className="ov-stat-label">IP Reputation</span>
+            <HoverTip text="Checks the server's IP address against AbuseIPDB, a database of IPs reported for malicious activity. The abuse score is the percentage of reporters who flagged this IP." />
           </div>
           {ipr?.checked ? (
             <>
@@ -381,13 +379,13 @@ const UrlResults: React.FC<{u: StaticData; riskLevel: string; url: string; aiSum
         {/* IP Grabber Detection */}
         {(() => {
           const g = u.ip_grabber;
-          // If field is missing entirely (old cached result), show "Not analysed"
           if (!g) {
             return (
               <div className="ov-stat-card" style={{'--accent': '#10b981'} as React.CSSProperties}>
                 <div className="ov-stat-header">
                   <Globe size={18}/>
                   <span className="ov-stat-label">IP Grabber</span>
+                  <HoverTip text="A service that silently logs the IP address of anyone who visits a link. Often disguised as normal URLs, they are used for tracking or doxxing." />
                 </div>
                 <span className="ov-stat-big" style={{color: '#10b981', fontSize: '1.15rem'}}>Clean</span>
                 <span className="ov-stat-sub">No grabber indicators found</span>
@@ -403,6 +401,7 @@ const UrlResults: React.FC<{u: StaticData; riskLevel: string; url: string; aiSum
               <div className="ov-stat-header">
                 <Globe size={18}/>
                 <span className="ov-stat-label">IP Grabber</span>
+                <HoverTip text="A service that silently logs the IP address of anyone who visits a link. Often disguised as normal URLs, they are used for tracking or doxxing." />
               </div>
               <span className="ov-stat-big" style={{color: accentColor, fontSize: '1.15rem', textTransform: 'capitalize'}}>
                 {g.confidence}
@@ -500,10 +499,7 @@ const UrlResults: React.FC<{u: StaticData; riskLevel: string; url: string; aiSum
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main component
-// ─────────────────────────────────────────────────────────────────────────────
-
+//Main component
 const DownloadButton: React.FC<{ onDownload: (format: ReportFormat) => Promise<void> }> = ({ onDownload }) => {
   const [loading, setLoading] = React.useState(false);
   const [open,    setOpen]    = React.useState(false);
@@ -549,16 +545,11 @@ const DownloadButton: React.FC<{ onDownload: (format: ReportFormat) => Promise<v
 
 const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicError, filename, fileSize, fileType, fileHash, riskLevel, riskScore, aiSummary, threatIntel, onDownload }) => {
 
-  // ── Early return for URL analysis ─────────────────────────────────────────
-  // (moved below hooks — see line ~490)
-
-  // Extract triage sub-object from the combined dynamic results structure
+  // ── Early return for URL analysis 
   const triage = dynamicData?.triage ?? null;
 
   const staticScore   = staticData?.risk_score ?? 0;
   const triageScore   = (triage?.triage_score ?? 0) * 10;
-  // Use the backend-computed score — it applies the calibrated Triage map,
-  // 50/50 merge weights, and the Authenticode signature multiplier.
   const combinedScore = riskScore ?? (dynamicData ? Math.round(staticScore * 0.4 + triageScore * 0.6) : staticScore);
   const riskColor     = RISK[riskLevel] ?? RISK.unknown;
 
@@ -572,7 +563,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
   const injected    = triage?.processes?.filter(p=>p.injected).length ?? 0;
   const dropped     = triage?.dropped_files?.length ?? 0;
 
-  // File info: prefer static_analysis.file_info, fall back to top-level props passed from Results.tsx
+  // File info
   const fi           = staticData?.file_info ?? {};
   const dispFilename = fi.filename  ?? filename  ?? '—';
   const dispSize     = fi.size      ?? fileSize  ?? 0;
@@ -594,9 +585,8 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
   const dynTags  = triage?.tags          ?? [];
   const hasNetwork = (net?.domains?.length ?? 0) + (net?.http_requests?.length ?? 0) + (net?.dns_requests?.length ?? 0) > 0;
 
-  // ── Early return for URL analysis — must be AFTER all hooks ─────────────
 
-  // ── Chart data (always computed — hooks cannot be conditional) ──
+  //Chart data 
   const radarData = useMemo(() => {
     const entropy = staticData?.entropy?.overall ?? 0;
     return [
@@ -647,18 +637,12 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
     return Object.entries(cats).map(([name,count]) => ({name,count})).sort((a,b)=>b.count-a.count);
   }, [inds]);
 
-  // URL early return — safe now that all hooks are above this line
   if (fileType === 'URL' && staticData) {
     return <UrlResults u={staticData} riskLevel={riskLevel} url={filename} aiSummary={aiSummary} />;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="ov-root">
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          ROW 1 – File info + Risk score in one card
-      ══════════════════════════════════════════════════════════════════════ */}
       <div className="ov-card ov-header-card" style={{'--risk-color': riskColor} as React.CSSProperties}>
 
         {/* Left: File Information */}
@@ -742,9 +726,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ROW 2 – MalwareBazaar hit banner (when confirmed)
-      ══════════════════════════════════════════════════════════════════════ */}
+      {/*MalwareBazaar hit banner  */}
       {threatIntel?.found && (
         <div className="ov-mb-banner">
           <div className="ov-mb-banner-left">
@@ -770,14 +752,10 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ROW 3 – AI Summary
-      ══════════════════════════════════════════════════════════════════════ */}
+      {/*AI Summary*/}
       <AiSummaryCard summary={aiSummary} />
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ROW 3 – Stat cards (with static analysis results inline)
-      ══════════════════════════════════════════════════════════════════════ */}
+      {/* Stat cards */}
       <div className="ov-stat-grid">
 
         {/* YARA */}
@@ -785,6 +763,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           <div className="ov-stat-header">
             <ShieldAlert size={18}/>
             <span className="ov-stat-label">YARA Matches</span>
+            <HoverTip text="YARA rules are patterns used to identify malware by matching known code signatures or strings inside a file. A match means the file triggered a known threat signature." />
           </div>
           <span className="ov-stat-big" style={{color: yaraCount > 0 ? '#ef4444' : '#10b981'}}>
             {yaraCount}
@@ -811,6 +790,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           <div className="ov-stat-header">
             <AlertTriangle size={18}/>
             <span className="ov-stat-label">Suspicious Indicators</span>
+            <HoverTip text="Properties of the file that are commonly associated with malware — such as unusual imports, obfuscated strings, or missing metadata. More indicators means higher suspicion." />
           </div>
           <span className="ov-stat-big" style={{color: sc(indicCount*5)}}>{indicCount}</span>
           <span className="ov-stat-sub">Static analysis</span>
@@ -832,6 +812,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           <div className="ov-stat-header">
             <Hash size={18}/>
             <span className="ov-stat-label">File Entropy</span>
+            <HoverTip text="A measure of randomness in the file's data, scored 0–8. Values above 7.0 suggest the file may be packed, compressed, or encrypted — techniques commonly used by malware to hide itself." />
           </div>
           <span className="ov-stat-big" style={{color: ec(staticData?.entropy?.overall ?? 0)}}>
             {staticData?.entropy?.overall?.toFixed(2) ?? '—'}
@@ -859,6 +840,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           <div className="ov-stat-header">
             <FileCode size={18}/>
             <span className="ov-stat-label">PE Sections</span>
+            <HoverTip text="Segments inside a Windows executable (.exe, .dll). Each section holds different content — code, data, resources. Unusual names or high entropy in a section can indicate tampering or packing." />
           </div>
           <span className="ov-stat-big" style={{color:'var(--primary)'}}>{sections.length}</span>
           <span className="ov-stat-sub">{sections.filter(s=>s.suspicious).length} suspicious</span>
@@ -895,6 +877,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           <div className="ov-stat-header">
             <Cpu size={18}/>
             <span className="ov-stat-label">Imported DLLs</span>
+            <HoverTip text="External libraries a program loads when it runs. Imports from network, crypto, or process-manipulation APIs can indicate the file's capabilities — and potential intent." />
           </div>
           <span className="ov-stat-big" style={{color:'var(--primary)'}}>{importCount}</span>
           <span className="ov-stat-sub">
@@ -925,6 +908,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
             <div className="ov-stat-header">
               <Activity size={18}/>
               <span className="ov-stat-label">Triage Score</span>
+              <HoverTip text="A behavioural risk score (0–10) from running the file in an isolated sandbox. The file is executed and monitored — this score reflects how malicious the observed behaviour was." />
             </div>
             <span className="ov-stat-big" style={{color:sc(triageScore)}}>
               {triage?.triage_score ?? 0}<span className="ov-stat-denom">/10</span>
@@ -965,6 +949,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
             <div className="ov-stat-header">
               <Network size={18}/>
               <span className="ov-stat-label">Network Activity</span>
+              <HoverTip text="Domains, HTTP requests, and DNS lookups made by the file while running in the sandbox. Unexpected network contact is a common sign of malware communicating with a remote server." />
             </div>
             <span className="ov-stat-big" style={{color: netDomains+netHttp > 0 ? '#f97316' : '#9ca3af'}}>
               {netDomains+netHttp+netDns}
@@ -1006,6 +991,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
             <div className="ov-stat-header">
               <HardDrive size={18}/>
               <span className="ov-stat-label">Dropped Files</span>
+              <HoverTip text="Files written to disk by the sample during sandbox execution. Malware often drops additional payloads, scripts, or configuration files as part of an infection chain." />
             </div>
             <span className="ov-stat-big" style={{color: injected>0?'#ef4444':dropped>0?'#f59e0b':'#9ca3af'}}>
               {dropped}
@@ -1044,6 +1030,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
             <div className="ov-stat-header">
               <Key size={18}/>
               <span className="ov-stat-label">Registry Operations</span>
+              <HoverTip text="Changes made to the Windows registry during sandbox execution. Malware commonly modifies the registry to run automatically on startup or alter system settings." />
             </div>
             <span className="ov-stat-big" style={{color:'#a78bfa'}}>{regKeys.length}</span>
             <span className="ov-stat-sub">Keys accessed</span>
@@ -1066,6 +1053,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
             <div className="ov-stat-header">
               <Lock size={18}/>
               <span className="ov-stat-label">Mutexes</span>
+              <HoverTip text="Named objects used by programs to prevent multiple copies from running at once. Malware often creates specific mutexes as a marker — seeing one can help identify a known malware family." />
             </div>
             <span className="ov-stat-big" style={{color:'#8b5cf6'}}>{mutexes.length}</span>
             <span className="ov-stat-sub">Named synchronisation objects</span>
@@ -1078,9 +1066,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
         )}
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ROW 4 – Sandbox unavailable notice (when dynamic analysis failed)
-      ══════════════════════════════════════════════════════════════════════ */}
+      {/*Sandbox unavailable notice*/}
       {!dynamicData && dynamicError && (
         <div className="ov-sandbox-breakdown ov-sandbox-failed">
           <div className="ov-sb-header">
@@ -1098,9 +1084,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ROW 4 – Sandbox breakdown (only when dynamic data present)
-      ══════════════════════════════════════════════════════════════════════ */}
+      {/*Sandbox breakdown */}
       {dynamicData && (
         <div className="ov-sandbox-breakdown">
           <div className="ov-sb-header">
@@ -1160,14 +1144,12 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ROW 5 – Visualisations 2×2
-      ══════════════════════════════════════════════════════════════════════ */}
+      {/*Visualisations */}
       <div className="ov-charts-grid">
 
         {/* Top-left: Risk Radar */}
         <div className="ov-chart-card">
-          <h3 className="ov-chart-title">Risk Profile</h3>
+          <h3 className="ov-chart-title">Risk Profile <HoverTip text="A spider chart showing how each analysis dimension contributes to the overall score. The further a point extends from the centre, the more threat indicators were found in that area." /></h3>
           <p className="ov-chart-sub">Normalised threat dimensions</p>
           <ResponsiveContainer width="100%" height={250}>
             <RadarChart data={radarData} margin={{top:10,right:20,bottom:10,left:20}}>
@@ -1182,9 +1164,9 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           </ResponsiveContainer>
         </div>
 
-        {/* Top-right: PE Section Entropy */}
+        {/*PE Section Entropy */}
         <div className="ov-chart-card">
-          <h3 className="ov-chart-title">PE Section Entropy</h3>
+          <h3 className="ov-chart-title">PE Section Entropy <HoverTip text="Each bar shows how random the data is in that section of the executable. The red line at 7.0 marks the threshold — sections above it are likely packed or encrypted, which is a common malware technique." /></h3>
           <p className="ov-chart-sub">Sections above 7.0 may be packed</p>
           {sectionData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
@@ -1203,7 +1185,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           ) : <div className="ov-chart-empty">No PE sections found</div>}
         </div>
 
-        {/* Bottom-left: Imports by DLL */}
+        {/* Imports by DLL */}
         <div className="ov-chart-card">
           <h3 className="ov-chart-title">Imports by DLL</h3>
           <p className="ov-chart-sub">Top DLLs by imported function count</p>
@@ -1221,7 +1203,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           ) : <div className="ov-chart-empty">No import data available</div>}
         </div>
 
-        {/* Bottom-right: Sig severity donut or indicator breakdown */}
+        {/* Signature Severity */}
         {sigPieData.length > 0 ? (
           <div className="ov-chart-card">
             <h3 className="ov-chart-title">Signature Severity</h3>

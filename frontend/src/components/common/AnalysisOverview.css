@@ -323,7 +323,7 @@
   display: inline-flex;
   align-items: center;
   margin-left: auto;
-  cursor: help;
+  cursor: default;
   flex-shrink: 0;
 }
 .ov-hovertip-icon {

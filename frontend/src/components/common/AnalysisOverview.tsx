@@ -790,7 +790,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           <div className="ov-stat-header">
             <AlertTriangle size={18}/>
             <span className="ov-stat-label">Suspicious Indicators</span>
-            <HoverTip text="Properties of the file that are commonly associated with malware — such as unusual imports, obfuscated strings, or missing metadata. More indicators means higher suspicion." />
+            <HoverTip text="Properties of the file that are commonly associated with malware, such as unusual imports, obfuscated strings, or missing metadata. More indicators means higher suspicion." />
           </div>
           <span className="ov-stat-big" style={{color: sc(indicCount*5)}}>{indicCount}</span>
           <span className="ov-stat-sub">Static analysis</span>
@@ -812,7 +812,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           <div className="ov-stat-header">
             <Hash size={18}/>
             <span className="ov-stat-label">File Entropy</span>
-            <HoverTip text="A measure of randomness in the file's data, scored 0–8. Values above 7.0 suggest the file may be packed, compressed, or encrypted — techniques commonly used by malware to hide itself." />
+            <HoverTip text="A measure of randomness in the file's data, scored 0 to 8. Values above 7.0 suggest the file may be packed, compressed, or encrypted, which is a technique commonly used by malware to hide itself." />
           </div>
           <span className="ov-stat-big" style={{color: ec(staticData?.entropy?.overall ?? 0)}}>
             {staticData?.entropy?.overall?.toFixed(2) ?? '—'}
@@ -840,7 +840,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           <div className="ov-stat-header">
             <FileCode size={18}/>
             <span className="ov-stat-label">PE Sections</span>
-            <HoverTip text="Segments inside a Windows executable (.exe, .dll). Each section holds different content — code, data, resources. Unusual names or high entropy in a section can indicate tampering or packing." />
+            <HoverTip text="Segments inside a Windows executable (.exe, .dll). Each section holds different content: code, data, resources. Unusual names or high entropy in a section can indicate tampering or packing." />
           </div>
           <span className="ov-stat-big" style={{color:'var(--primary)'}}>{sections.length}</span>
           <span className="ov-stat-sub">{sections.filter(s=>s.suspicious).length} suspicious</span>
@@ -877,7 +877,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
           <div className="ov-stat-header">
             <Cpu size={18}/>
             <span className="ov-stat-label">Imported DLLs</span>
-            <HoverTip text="External libraries a program loads when it runs. Imports from network, crypto, or process-manipulation APIs can indicate the file's capabilities — and potential intent." />
+            <HoverTip text="External libraries a program loads when it runs. Imports from network, crypto, or process-manipulation APIs can indicate the file's capabilities and potential intent." />
           </div>
           <span className="ov-stat-big" style={{color:'var(--primary)'}}>{importCount}</span>
           <span className="ov-stat-sub">
@@ -908,7 +908,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
             <div className="ov-stat-header">
               <Activity size={18}/>
               <span className="ov-stat-label">Triage Score</span>
-              <HoverTip text="A behavioural risk score (0–10) from running the file in an isolated sandbox. The file is executed and monitored — this score reflects how malicious the observed behaviour was." />
+              <HoverTip text="A behavioural risk score (0 to 10) from running the file in an isolated sandbox. The file is executed and monitored, and this score reflects how malicious the observed behaviour was." />
             </div>
             <span className="ov-stat-big" style={{color:sc(triageScore)}}>
               {triage?.triage_score ?? 0}<span className="ov-stat-denom">/10</span>
@@ -1053,7 +1053,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
             <div className="ov-stat-header">
               <Lock size={18}/>
               <span className="ov-stat-label">Mutexes</span>
-              <HoverTip text="Named objects used by programs to prevent multiple copies from running at once. Malware often creates specific mutexes as a marker — seeing one can help identify a known malware family." />
+              <HoverTip text="Named objects used by programs to prevent multiple copies from running at once. Malware often creates specific mutexes as a marker, and seeing one can help identify a known malware family." />
             </div>
             <span className="ov-stat-big" style={{color:'#8b5cf6'}}>{mutexes.length}</span>
             <span className="ov-stat-sub">Named synchronisation objects</span>
@@ -1166,7 +1166,7 @@ const AnalysisOverview: React.FC<Props> = ({ staticData, dynamicData, dynamicErr
 
         {/*PE Section Entropy */}
         <div className="ov-chart-card">
-          <h3 className="ov-chart-title">PE Section Entropy <HoverTip text="Each bar shows how random the data is in that section of the executable. The red line at 7.0 marks the threshold — sections above it are likely packed or encrypted, which is a common malware technique." /></h3>
+          <h3 className="ov-chart-title">PE Section Entropy <HoverTip text="Each bar shows how random the data is in that section of the executable. The red line at 7.0 marks the threshold. Sections above it are likely packed or encrypted, which is a common malware technique." /></h3>
           <p className="ov-chart-sub">Sections above 7.0 may be packed</p>
           {sectionData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>

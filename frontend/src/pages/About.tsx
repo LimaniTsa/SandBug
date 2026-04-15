@@ -58,7 +58,7 @@ const About: React.FC = () => {
         <div className="about-hero-content">
           <div className="about-badge">
             <Code size={14} />
-            Final Year Project · 2025
+            Final Year Project · 2026
           </div>
           <h1 className="about-hero-title">
             About <span className="about-gradient-text">SandBug</span>
@@ -160,7 +160,7 @@ const About: React.FC = () => {
       {/* Footer credit */}
       <section className="about-credit">
         <div className="about-container about-credit-inner">
-          <p>Built by <strong>Liman T.</strong> · 2025</p>
+          <p>Built by <strong>Liman T.</strong> · 2026</p>
           <a
             href="https://github.com/LimaniTsa/SandBug.git"
             target="_blank"

@@ -112,7 +112,7 @@ const About: React.FC = () => {
           <div className="about-mission-text">
             <h2 className="about-section-title left">Why It Was Built</h2>
             <p>
-              This started as a final year university project with a simple goal: make malware
+              SandBug is my final year university project, built with a simple goal: make malware
               analysis less intimidating. Most existing tools assume you already know what a YARA
               rule is, what entropy means, or how to read a sandbox report. For anyone outside
               of security, that is a hard wall to hit.

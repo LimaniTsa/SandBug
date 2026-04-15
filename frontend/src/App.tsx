@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Results from './pages/Results';
 import History from './pages/History';
+import About from './pages/About';
 import { logout } from './services/api';
 import './styles/globals.css';
 
@@ -91,6 +92,7 @@ function App() {
                 />
               } 
             />
+            <Route path="/about" element={<About />} />
             <Route path="/results/:id" element={<Results />} />
             <Route
               path="/history"

@@ -13,8 +13,8 @@ const About: React.FC = () => {
     { label: 'Queue', value: 'Redis + RQ' },
     { label: 'AI Engine', value: 'Claude API' },
     { label: 'Sandboxing', value: 'Dynamic analysis pipeline' },
-    { label: 'Threat Intel', value: 'MalwareBazaar, YARA' },
-    { label: 'Reports', value: 'AI-generated PDF export' },
+    { label: 'Threat Intel', value: 'MalwareBazaar' },
+    { label: 'Reports', value: 'fpdf2 for PDF generation' },
   ];
 
   const capabilities = [

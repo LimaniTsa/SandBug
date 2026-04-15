@@ -10,7 +10,6 @@ const Footer: React.FC = () => {
           <div className="footer-section">
             <h3>SandBug</h3>
             <p>AI-Assisted Malware Analysis Sandbox</p>
-            <p className="footer-copyright">© 2025 Liman T. All rights reserved.</p>
           </div>
 
           <div className="footer-section">

@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import Results from './pages/Results';
 import History from './pages/History';
 import About from './pages/About';
+import NotFound from './pages/NotFound';
 import { logout } from './services/api';
 import './styles/globals.css';
 
@@ -98,6 +99,7 @@ function App() {
               path="/history"
               element={<History isAuthenticated={isAuthenticated} />}
             />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         <Footer />

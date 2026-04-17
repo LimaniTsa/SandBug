@@ -40,6 +40,7 @@ interface HistoryProps {
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const PER_PAGE = 10;
 
+// format a byte count into a human-readable string
 const fmt = (bytes: number): string => {
   if (!bytes) return '—';
   if (bytes < 1024)    return `${bytes} B`;
@@ -47,6 +48,7 @@ const fmt = (bytes: number): string => {
   return `${(bytes / 1048576).toFixed(1)} MB`;
 };
 
+// convert an iso timestamp into a relative label like "3h ago"
 const relTime = (iso: string): string => {
   const diff = Date.now() - new Date(iso).getTime();
   const s = Math.floor(diff / 1000);
@@ -123,11 +125,13 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
   const [statsLoading, setStatsLoading] = useState(false);
   const [chartAnalyses, setChartAnalyses] = useState<AnalysisSummary[]>([]);
 
+  // fetch summary counts for the stats bar and charts — runs once on mount
   const fetchStats = useCallback(async () => {
     const token = localStorage.getItem('access_token');
     if (!token) return;
     setStatsLoading(true);
     try {
+      // fire all five requests in parallel: one for overall total, one per risk level
       const levels = ['critical', 'high', 'medium', 'low'];
       const [totalRes, ...levelRes] = await Promise.all([
         fetch(`${API_BASE}/analysis/history?page=1&per_page=1`, {
@@ -232,7 +236,7 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [isAuthenticated, page, riskFilter, search, fetchHistory]);
 
-  // Poll every 5 s while any row is still processing
+  // keep the table live while any row is still in progress
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     const hasInProgress = analyses.some(
@@ -247,6 +251,7 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
   }, [analyses, isAuthenticated, page, riskFilter, search, fetchHistory]);
 
   const handleDownload = async (e: React.MouseEvent, id: number, filename: string | null) => {
+    // stop the row link from navigating while the download button is clicked
     e.preventDefault();
     e.stopPropagation();
     const token = localStorage.getItem('access_token');
@@ -258,6 +263,7 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Download failed');
+      // create a temporary object url and trigger the browser save dialog
       const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
@@ -337,6 +343,7 @@ const History: React.FC<HistoryProps> = ({ isAuthenticated }) => {
     ].filter(d => d.value > 0);
   }, [stats]);
 
+  // build a 14-day submission count array for the bar chart
   const activityData = useMemo(() => {
     const days = [];
     for (let i = 13; i >= 0; i--) {

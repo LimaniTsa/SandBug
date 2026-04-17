@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
+# stores registered user accounts
 class User(db.Model):
     __tablename__ = 'users'
     id            = db.Column(db.Integer, primary_key=True)
@@ -27,6 +28,7 @@ class User(db.Model):
         }
 
 
+# one record per file or url submission — links to all result tables
 class Analysis(db.Model):
     __tablename__     = 'analyses'
     id                = db.Column(db.Integer, primary_key=True)
@@ -59,6 +61,7 @@ class Analysis(db.Model):
                                       cascade='all, delete-orphan')
     url_analysis   = db.relationship('UrlAnalysis',   foreign_keys=[url_analysis_id])
 
+    # maps a numeric score to a human-readable risk level
     def calculate_risk_level(self):
         score = float(self.risk_score or 0)
         if score < 25:
@@ -171,6 +174,7 @@ class Analysis(db.Model):
         return data
 
 
+# pe headers, entropy, sections, imports and signature info from static analysis
 class StaticResult(db.Model):
     __tablename__     = 'static_results'
     id                = db.Column(db.Integer, primary_key=True)
@@ -186,6 +190,7 @@ class StaticResult(db.Model):
     created_at        = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# each row is one yara rule that matched during static analysis
 class YaraMatch(db.Model):
     __tablename__   = 'yara_matches'
     id              = db.Column(db.Integer, primary_key=True)
@@ -197,6 +202,7 @@ class YaraMatch(db.Model):
     matched_at      = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# sandbox execution data from triage — processes, network, registry, dropped files
 class DynamicResult(db.Model):
     __tablename__         = 'dynamic_results'
     id                    = db.Column(db.Integer, primary_key=True)
@@ -214,6 +220,7 @@ class DynamicResult(db.Model):
     created_at            = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# individual indicators of compromise extracted from static or dynamic analysis
 class IOC(db.Model):
     __tablename__ = 'iocs'
     id          = db.Column(db.Integer, primary_key=True)
@@ -225,6 +232,7 @@ class IOC(db.Model):
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# results from url threat checks — ssl, redirects, ip reputation, grabber detection
 class UrlAnalysis(db.Model):
     __tablename__   = 'url_analyses'
     id              = db.Column(db.Integer, primary_key=True)
@@ -242,6 +250,7 @@ class UrlAnalysis(db.Model):
     submitted_at    = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# claude-generated summary stored after analysis completes
 class AIReport(db.Model):
     __tablename__  = 'ai_reports'
     id             = db.Column(db.Integer, primary_key=True)

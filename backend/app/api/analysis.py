@@ -12,7 +12,7 @@ import tempfile
 from datetime import datetime, timezone
 from app.services.ai_summarizer import summarise_url
 
-# Extensions we will analyse inside a zip
+# Extensions to analyse if found in a zip, prioritised over file size when multiple files are present.
 _ANALYSABLE = {
     'exe', 'dll', 'sys', 'scr', 'com', 'drv', 'ocx', 'cpl',
     'js', 'vbs', 'vbe', 'ps1', 'psm1', 'bat', 'cmd', 'hta', 'wsf', 'wsh',
@@ -27,9 +27,9 @@ def _extract_zip(zip_bytes: bytes) -> tuple[bytes, str] | None:
     """
     Extract the best analysable file from a zip.
     Tries common malware-zip passwords automatically.
-    Prefers files with known extensions; falls back to the largest file.
+    Falls back to the largest file.
     Guards against zip-slip path traversal.
-    Returns (file_bytes, filename) or None on failure.
+    Returns file_bytes, filename or None on failure.
     """
     with tempfile.TemporaryDirectory() as extract_dir:
         zip_tmp = os.path.join(extract_dir, 'upload.zip')
@@ -67,13 +67,13 @@ def _extract_zip(zip_bytes: bytes) -> tuple[bytes, str] | None:
                     return data, os.path.basename(target.filename)
 
             except RuntimeError:
-                continue  # wrong password — try next
+                continue  # wrong password 
             except (zipfile.BadZipFile, Exception) as e:
                 if 'password' in str(e).lower() or 'bad password' in str(e).lower():
                     continue
                 return None
             except ValueError:
-                raise  # zip-slip — propagate
+                raise  # zip-slip
 
     return None
 
@@ -160,8 +160,9 @@ def get_file_type(file_path):
 @analysis_bp.route('/upload', methods=['POST'])
 def upload_file():
     """
-    Accept the file, create a DB record, and return 202 immediately.
-    Analysis runs in a background thread, the client polls GET /<id> for status.
+    Handles file ingestion by creating a database record for the submission 
+    and returning a 202 Accepted response without blocking. 
+    The analysis pipeline executes asynchronously.
     """
     try:
         user_id = None
@@ -190,7 +191,7 @@ def upload_file():
         original_filename = secure_filename(file.filename)
         file_bytes = file.read()
 
-        # If the upload is a zip, extract the first analysable file from it
+        # if the upload is a zip, extract the inner file before analysis
         if original_filename.lower().endswith('.zip'):
             result = _extract_zip(file_bytes)
             if result is None:
@@ -202,7 +203,7 @@ def upload_file():
 
         file_size  = len(file_bytes)
 
-        # Write to a temp file for hashing and type detection before storage.
+        # write to a temp file so we can compute hash and detect type before saving to storage
         with tempfile.NamedTemporaryFile(
             suffix=os.path.splitext(original_filename)[1] or '.bin',
             delete=False,

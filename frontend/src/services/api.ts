@@ -10,6 +10,7 @@ const api = axios.create({
   },
 });
 
+// attach the jwt token to every request if the user is logged in
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {

@@ -14,12 +14,14 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ isAuthenticated, userEmail, darkMode, onToggleDarkMode }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // full page reload on logout so all in-memory state is cleared
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     window.location.href = '/';
   };
 
+  // show just the local part of the email as the display name
   const getUserName = () => {
     if (!userEmail) return '';
     return userEmail.split('@')[0];
@@ -27,6 +29,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated, userEmail, darkMode, o
 
   const closeMenu = () => setMenuOpen(false);
 
+  // add a css class to the navbar when the user scrolls down so a background can appear
   useEffect(() => {
     const onScroll = () => {
       const nav = document.querySelector('.navbar');

@@ -1,4 +1,5 @@
 // @ts-nocheck
+// sourced from react bits (https://www.reactbits.dev)
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import './LiquidEther.css';

@@ -1,8 +1,3 @@
-"""
-threat_intel.py
-Cross-checks file hashes against MalwareBazaar (abuse.ch).
-Set MB_API_KEY env variable to authenticate (get a free key at https://bazaar.abuse.ch/api/).
-"""
 import os
 import logging
 import requests
@@ -14,7 +9,7 @@ TIMEOUT_S  = 10
 
 
 def lookup_hash(sha256: str) -> dict:
-    
+    # api key is optional — malwarebazaar allows unauthenticated queries at a lower rate limit
     api_key = os.getenv('MB_API_KEY', '').strip()
 
     headers = {}
@@ -31,6 +26,7 @@ def lookup_hash(sha256: str) -> dict:
         resp.raise_for_status()
         data = resp.json()
 
+        # query_status == 'ok' means the hash was found in the database
         if data.get('query_status') == 'ok' and data.get('data'):
             info = data['data'][0]
             return {

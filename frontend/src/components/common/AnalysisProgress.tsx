@@ -48,6 +48,7 @@ const STEPS: Step[] = [
   },
 ];
 
+// maps the current backend status to a visual state for each step in the timeline
 const stepState = (step: Step, status: string): 'done' | 'active' | 'pending' => {
   if (step.done.includes(status))     return 'done';
   if (step.statuses.includes(status)) return 'active';

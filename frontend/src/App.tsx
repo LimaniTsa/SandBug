@@ -17,11 +17,13 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
   const [userName, setUserName] = useState<string | undefined>(undefined);
+  // default to dark mode if no preference is stored
   const [darkMode, setDarkMode] = useState(() => {
     const stored = localStorage.getItem('theme');
     return stored ? stored === 'dark' : true;
   });
 
+  // apply the theme attribute to the root element so css variables respond to it
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');

@@ -36,14 +36,7 @@ class TriageClient:
         })
 
     def analyse(self, file_bytes: bytes, filename: str, on_status=None) -> dict:
-        """
-        Submit *file_bytes*, poll until done, return structured results.
-        Blocks for up to ANALYSIS_TIMEOUT_S seconds.
 
-        on_status: optional callable(status_str) called when the Triage job
-                   transitions between queued → running → reported so callers
-                   can update a progress indicator.
-        """
         sample_id = self._submit(file_bytes, filename)
         logger.info("[triage] submitted sample_id=%s filename=%s", sample_id, filename)
 
@@ -109,31 +102,13 @@ class TriageClient:
         )
 
     def _build_result(self, sample_id: str) -> dict:
-        """
-        Pull overview.json and reshape into SandBug's dynamic_analysis schema.
-
-        Stored in Analysis.dynamic_analysis:
-        {
-          "sandbox":             str,
-          "sample_id":           str,
-          "report_url":          str,
-          "triage_score":        int,   # raw 0-10 Triage score
-          "signatures":          [...],
-          "network":             {...},
-          "processes":           [...],
-          "dropped_files":       [...],
-          "registry":            [...],
-          "mutexes":             [...],
-          "tags":                [...],
-          "errors":              [...]
-        }
-        """
+        # fetch the overview report and reshape it into the format the app expects
         resp = self.session.get(
             f"{TRIAGE_BASE_URL}/samples/{sample_id}/overview.json",
             timeout=30,
         )
         self._raise_for_status(resp)
-        overview = resp.json()
+        overview = resp.json() 
 
         analysis_block = overview.get("analysis", {})
 

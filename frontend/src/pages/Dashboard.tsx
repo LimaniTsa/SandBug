@@ -35,6 +35,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isAuthenticated }) => {
   const [urlInput, setUrlInput]         = useState('');
   const [urlStatus, setUrlStatus]       = useState<UrlStatus>({ status: 'idle' });
 
+  // client-side validation mirrors the server-side limits in config/__init__.py
   const MAX_FILE_SIZE      = 200 * 1024 * 1024;
   const ALLOWED_EXTENSIONS = [
     'exe', 'dll', 'sys', 'scr', 'com', 'drv', 'ocx', 'cpl',
@@ -83,12 +84,14 @@ const Dashboard: React.FC<DashboardProps> = ({ isAuthenticated }) => {
       formData.append('file', selectedFile);
       const response = await api.post('/analysis/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        // track upload progress for the progress bar
         onUploadProgress: (e) => {
           const progress = e.total ? Math.round((e.loaded * 100) / e.total) : 0;
           setUploadStatus({ status: 'uploading', progress });
         },
       });
       setUploadStatus({ status: 'success', message: 'File uploaded successfully! Analysis in progress...' });
+      // short delay so the user sees the success message before being redirected
       setTimeout(() => navigate(`/results/${response.data.analysis.id}`), 2000);
     } catch (err: any) {
       setUploadStatus({ status: 'error', message: err.response?.data?.error || 'Upload failed. Please try again.' });
@@ -97,7 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isAuthenticated }) => {
 
   const resetUpload = () => { setSelectedFile(null); setUploadStatus({ status: 'idle' }); };
 
-  //url
+  // prepend https if the user typed a bare domain like example.com
   const normaliseUrl = (raw: string): string => {
     const t = raw.trim();
     return /^https?:\/\//i.test(t) ? t : `https://${t}`;

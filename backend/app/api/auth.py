@@ -11,9 +11,11 @@ MAX_ATTEMPTS      = 5
 LOCKOUT_SECONDS   = 900   # 15 minutes
 WARNING_AT        = 3     # warn when this many attempts remain
 
-_attempts: dict  = {}    # { ip: {"count": int, "locked_until": datetime|None} }
+# in-memory rate limit tracker: { ip: {"count": int, "locked_until": datetime|None} }
+_attempts: dict  = {}
 _attempts_lock   = Lock()
 
+# use x-forwarded-for so the real client ip is used when behind a proxy or railway
 def _client_ip() -> str:
     return (request.headers.get('X-Forwarded-For', request.remote_addr) or '').split(',')[0].strip()
 
@@ -88,6 +90,7 @@ def register():
         if existing_user:
             return jsonify({'error': 'Email already registered'}), 409
 
+        # hash the password before storing — never stored in plaintext
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
 
         new_user = User(

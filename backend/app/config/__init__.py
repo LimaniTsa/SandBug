@@ -3,12 +3,14 @@ from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
 
+# load .env from the backend root directory
 load_dotenv(Path(__file__).resolve().parents[2] / '.env')
 
 _PROD = os.environ.get('FLASK_ENV') == 'production'
 
 
 def _require(var: str) -> str:
+    # raise an error in production if a required env var is missing
     val = os.environ.get(var)
     if not val and _PROD:
         raise RuntimeError(f'{var} must be set in production')
@@ -22,6 +24,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'postgresql://sandbug_user:sandbug_password@localhost/sandbug_db'
+    # sql query logging is enabled in dev to help with debugging
     SQLALCHEMY_ECHO = not _PROD
 
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
@@ -44,12 +47,14 @@ class Config:
 
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
 
+    # comma-separated list of allowed frontend origins, e.g. https://www.sandbug.ie,http://localhost:3000
     CORS_ORIGINS = [o.strip() for o in os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',')]
 
     HYBRID_ANALYSIS_API_KEY = os.environ.get('HYBRID_ANALYSIS_API_KEY', '')
 
     DEBUG = not _PROD
 
+    # s3 is used for file storage in production; falls back to local disk if not configured
     S3_BUCKET             = os.environ.get('S3_BUCKET', '')
     S3_REGION             = os.environ.get('S3_REGION', 'us-east-1')
     AWS_ACCESS_KEY_ID     = os.environ.get('AWS_ACCESS_KEY_ID', '')

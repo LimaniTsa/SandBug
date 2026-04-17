@@ -9,6 +9,7 @@ from rq import Queue
 from app.config import Config
 from app.models import db
 
+# extensions are initialised here and bound to the app inside create_app
 migrate = Migrate()
 jwt = JWTManager()
 bcrypt = Bcrypt()
@@ -24,6 +25,7 @@ def create_app():
     jwt.init_app(app)
     bcrypt.init_app(app)
 
+    # restrict cross-origin requests to the configured frontend origins
     CORS(app, resources={
         r"/api/*": {
             "origins": app.config['CORS_ORIGINS'],
@@ -40,6 +42,7 @@ def create_app():
     import os
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+    # connect to redis and create the rq job queue for background analysis tasks
     global rq_queue
     redis_conn = Redis.from_url(app.config['REDIS_URL'])
     rq_queue = Queue(connection=redis_conn)

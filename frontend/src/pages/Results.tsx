@@ -12,6 +12,7 @@ const Results: React.FC = () => {
   const analysisId = parseInt(id || '0');
 
   const { status, stage, analysis, isComplete, isFailed, error } = useAnalysisPoller(analysisId);
+  // keep showing the progress screen briefly if analysis is done but the ai summary hasn't arrived yet
   const awaitingSummary = isComplete && !isFailed && !analysis?.ai_summary;
 
   const handleDownload = async (format: ReportFormat) => {
@@ -45,6 +46,7 @@ const Results: React.FC = () => {
 
   const riskLabel    = analysis?.risk_level ?? 'unknown';
   const dynAnalysis  = analysis?.dynamic_analysis as { triage?: unknown; hybrid_analysis?: unknown; error?: string } | null | undefined;
+  // consider dynamic analysis present only if at least one sandbox returned results
   const hasDynamic   = !!dynAnalysis && (!!dynAnalysis.triage || !!dynAnalysis.hybrid_analysis);
   const dynamicError = !hasDynamic ? (dynAnalysis?.error ?? null) : null;
 

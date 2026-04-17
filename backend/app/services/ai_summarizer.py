@@ -15,9 +15,9 @@ API_URL      = 'https://api.anthropic.com/v1/messages'
 
 
 def _get_api_key() -> str:
-    """Read the key fresh each call so .env changes take effect without restart."""
     return os.getenv('ANTHROPIC_API_KEY', '')
 
+# sends a prompt to the claude api and returns the text response
 def _call_claude(system_prompt: str, user_content: str, max_tokens: int = 600) -> str:
     api_key = _get_api_key()
     if not api_key:
@@ -91,6 +91,7 @@ def summarise_file(
         return ''
 
     try:
+        # trim the raw analysis data down before sending to claude to stay within token limits
         static_summary = {
             'risk_score':            static_analysis.get('risk_score'),
             'entropy':               static_analysis.get('entropy', {}).get('overall'),

@@ -73,6 +73,7 @@ export interface PollerResult {
 const AI_SUMMARY_RETRIES = 5;
 const AI_SUMMARY_INTERVAL_MS = 3000;
 
+// polls the analysis endpoint until a terminal status is reached, then waits briefly for the ai summary
 export function useAnalysisPoller(analysisId: number): PollerResult {
   const [status,   setStatus]   = useState('processing');
   const [analysis, setAnalysis] = useState<Record<string, any> | null>(null);

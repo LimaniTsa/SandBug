@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 _s3_client = None
 
 
+# lazy-initialise the s3 client so boto3 is only imported when s3 is actually used
 def _get_s3():
     global _s3_client
     if _s3_client is None:

@@ -5,6 +5,7 @@ from app.services.triage_client import TriageClient, TriageError, TriageTimeoutE
 
 logger = logging.getLogger(__name__)
 
+# triage scores go 0-10; this maps them to our 0-100 risk scale
 _TRIAGE_SCORE_MAP = {
     0:  0,
     1:  4,
@@ -33,6 +34,7 @@ def analyse_file(file_path: str, filename: str, on_status=None) -> dict:
     triage_risk   = 0
     triage_error  = None
 
+    # submit the file to the triage sandbox and wait for the report
     triage_key = os.environ.get("TRIAGE_API_KEY")
     if not triage_key:
         triage_error = "TRIAGE_API_KEY environment variable is not set"

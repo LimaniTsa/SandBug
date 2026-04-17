@@ -19,19 +19,20 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
 
     CLAUDE_MODEL = 'claude-haiku-4-5-20251001'
 
+    # create a fresh app context because rq workers run in a separate process
     app = create_app()
     with app.app_context():
         record = Analysis.query.get(analysis_id)
         if not record:
             return
 
-        static_raw        = None
-        dynamic_raw       = None
+        static_raw = None
+        dynamic_raw  = None
         static_risk_score = 0
-        dynamic_failed    = False
+        dynamic_failed = False
         sandbox_skipped_reason = None
 
-        # Static analysis
+        # static analysis: pe parsing, entropy, yara, imports, strings
         try:
             with storage.local_path(file_path) as local_file:
                 static_raw = static_analyse_file(local_file)
@@ -42,7 +43,7 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
             record.error_message = f'Static analysis failed: {exc}'
         db.session.commit()
 
-        # Dynamic analysis — always run regardless of static score
+        # dynamic analysis: submit to triage sandbox and wait for results
         def _on_status(status_str: str):
             try:
                 record.status = status_str
@@ -139,7 +140,7 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
                 network_activity     = triage.get('network'),
                 registry_changes     = triage.get('registry'),
                 dropped_files        = triage.get('dropped_files'),
-                # Triage-specific fields stored here (no dedicated columns)
+                # Triage-specific fields stored here 
                 file_operations      = {
                     'triage_score': triage.get('triage_score', 0),
                     'signatures':   triage.get('signatures', []),
@@ -160,11 +161,10 @@ def run_analysis_task(analysis_id: int, file_path: str, filename: str):
             is_signed         = is_signed,
         )
 
-        # Cross-check hash against MalwareBazaar
+        # cross-check the file hash against malwarebazaar — if it's a known sample, floor the score at 85
         threat_intel = lookup_hash(record.file_hash or '')
         record.threat_intel = threat_intel
         if threat_intel.get('found'):
-            # Confirmed known malware — floor the score at 85
             merged_score = max(merged_score, 85)
 
         record.risk_score = merged_score

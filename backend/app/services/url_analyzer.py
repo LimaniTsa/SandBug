@@ -16,6 +16,7 @@ requests.packages.urllib3.disable_warnings(
 ABUSEIPDB_KEY        = os.getenv('ABUSEIPDB_KEY', '') or os.getenv('ABUSEIPDB_API_KEY', '')
 SAFE_BROWSING_KEY    = os.getenv('SAFE_BROWSING_KEY', '') or os.getenv('SAFE_BROWSING_API_KEY', '')
 
+# tlds commonly used for free/throwaway domains associated with phishing
 SUSPICIOUS_TLDS = {
     '.tk', '.ml', '.ga', '.cf', '.gq',
     '.xyz', '.top', '.club', '.work',
@@ -39,6 +40,7 @@ SUSPICIOUS_PATTERNS = [
     r'%[0-9a-fA-F]{2}.*%[0-9a-fA-F]{2}',
 ]
 
+# known services that log the visitor's ip address when a link is opened
 IP_GRABBER_DOMAINS = {
     'grabify.link', 'grabify.ru', 'grabify.io',
     'iplogger.ru', 'iplogger.co', 'iplogger.com',
@@ -328,6 +330,7 @@ def analyse_url(url: str) -> dict:
 
     ip = _resolve_ip(hostname)
 
+    # run all checks in sequence and aggregate into a single risk score
     ssl_result                            = _check_ssl(hostname) if parsed.scheme == 'https' else {'valid': False, 'error': 'Not HTTPS'}
     redirect_result                       = _follow_redirects(url)
     heuristic_score, heuristic_indicators = _heuristic_score(parsed)

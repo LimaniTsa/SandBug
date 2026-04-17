@@ -56,6 +56,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
     try {
       const response = await login(formData.email, formData.password);
+      // store credentials so the axios interceptor can attach them to future requests
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
       onLoginSuccess(response.user.email, response.user.name);
@@ -63,6 +64,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     } catch (err: any) {
       const data = err.response?.data ?? {};
       if (data.locked) {
+        // server returned 429 — start the lockout countdown from retry_after seconds
         setLocked(true);
         setCountdown(data.retry_after ?? 900);
         setError(data.error || 'Too many failed attempts. Account temporarily locked.');

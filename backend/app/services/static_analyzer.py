@@ -49,6 +49,7 @@ class StaticAnalyser:
             self._analyse_pe_structure()
             self._calculate_entropy()
 
+            # jar/apk/zip formats are already compressed so string extraction is skipped
             if self._is_compressed_format():
                 self._analyse_jar()
             else:
@@ -80,6 +81,7 @@ class StaticAnalyser:
             self.results['file_info']['error'] = str(e)
 
     def _analyse_pe_structure(self):
+        # fast_load skips non-essential directories; we parse only the ones we need
         try:
             self.pe = pefile.PE(data=self.file_data, fast_load=True)
             self.pe.parse_data_directories(directories=[
@@ -220,7 +222,8 @@ class StaticAnalyser:
 
     def _extract_strings(self, min_length: int = 4, max_strings: int = 500):
         try:
-            scan_data = self.file_data[:4 * 1024 * 1024]  # scan first 4 MB only
+            # cap at 4 MB to avoid scanning huge binaries unnecessarily
+            scan_data = self.file_data[:4 * 1024 * 1024]
 
             ascii_pattern = re.compile(rb'[\x20-\x7E]{' + str(min_length).encode() + rb',}')
             ascii_results = []

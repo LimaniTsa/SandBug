@@ -20,6 +20,7 @@ export async function downloadReport(
     throw new Error(err.error ?? `Failed to generate report (${res.status})`);
   }
 
+  // create a temporary object url, trigger a click to open the save dialog, then clean up
   const blob = await res.blob();
   const url  = URL.createObjectURL(blob);
 
